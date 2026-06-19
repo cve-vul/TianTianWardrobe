@@ -259,7 +259,7 @@ private fun PermissionRequest(showRationale: Boolean, onRequestPermission: () ->
 private fun EditClothingScreen(
     captureState: CaptureState,
     isVisionConfigured: Boolean,
-    onAnalyze: (String, (VisionAnalysisResult?) -> Unit) -> Unit,
+    onAnalyze: (String, (VisionAnalysisResult?, String?) -> Unit) -> Unit,
     onNameChange: (String) -> Unit,
     onCategoryChange: (String) -> Unit,
     onColorChange: (String) -> Unit,
@@ -291,7 +291,7 @@ private fun EditClothingScreen(
             analysisTriggered = true
             if (isVisionConfigured) {
                 analyzing = true
-                onAnalyze(captureState.photoPath) { result ->
+                onAnalyze(captureState.photoPath) { result, error ->
                     analyzing = false
                     if (result != null) {
                         onNameChange(result.name)
@@ -301,7 +301,7 @@ private fun EditClothingScreen(
                         onStyleChange(result.style)
                         onDescriptionChange(result.description)
                     } else {
-                        analyzeError = "AI 识别失败，请手动填写"
+                        analyzeError = error ?: "AI 识别失败，请手动填写"
                     }
                 }
             } else {
@@ -396,11 +396,43 @@ private fun EditClothingScreen(
 
             analyzeError?.let { error ->
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = error,
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.error
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(
+                        Icons.Default.Warning,
+                        null,
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = error,
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.weight(1f)
+                    )
+                    TextButton(onClick = {
+                        analyzeError = null
+                        analyzing = true
+                        onAnalyze(captureState.photoPath) { result, error2 ->
+                            analyzing = false
+                            if (result != null) {
+                                onNameChange(result.name)
+                                onCategoryChange(result.category)
+                                onColorChange(result.color)
+                                onSeasonChange(result.season)
+                                onStyleChange(result.style)
+                                onDescriptionChange(result.description)
+                            } else {
+                                analyzeError = error2 ?: "AI 识别失败，请手动填写"
+                            }
+                        }
+                    }) {
+                        Text("重试", fontSize = 12.sp)
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))

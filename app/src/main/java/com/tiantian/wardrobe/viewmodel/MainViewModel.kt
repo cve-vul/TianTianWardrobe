@@ -139,14 +139,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val isVisionConfigured: Boolean
         get() = prefs.isVisionConfigured
 
-    fun analyzeClothing(imagePath: String, onResult: (VisionAnalysisResult?) -> Unit) {
+    fun analyzeClothing(imagePath: String, onResult: (VisionAnalysisResult?, error: String?) -> Unit) {
         viewModelScope.launch {
-            val result = try {
-                visionClient.analyzeClothing(imagePath)
-            } catch (_: Exception) {
-                null
+            try {
+                val result = visionClient.analyzeClothing(imagePath)
+                onResult(result, null)
+            } catch (e: Exception) {
+                onResult(null, e.message ?: "未知错误")
             }
-            onResult(result)
         }
     }
 }

@@ -1,5 +1,7 @@
 package com.tiantian.wardrobe.ai
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.util.Base64
 import com.tiantian.wardrobe.data.PreferencesManager
 import kotlinx.coroutines.Dispatchers
@@ -10,6 +12,7 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.util.concurrent.TimeUnit
 
@@ -35,10 +38,10 @@ class VisionClient(private val prefs: PreferencesManager) {
     suspend fun analyzeClothing(imagePath: String): VisionAnalysisResult = withContext(Dispatchers.IO) {
         val imageFile = File(imagePath)
         if (!imageFile.exists()) {
-            throw IllegalStateException("图片文件不存在")
+            throw IllegalStateException("图片文件不存在，请重新拍照")
         }
 
-        val base64Image = Base64.encodeToString(imageFile.readBytes(), Base64.NO_WRAP)
+        val base64Image = compressAndEncodeImage(imagePath)
         val prompt = buildPrompt()
 
         val content = JSONArray().apply {
@@ -81,17 +84,67 @@ class VisionClient(private val prefs: PreferencesManager) {
         val responseStr = response.body?.string() ?: ""
 
         if (!response.isSuccessful) {
-            throw IllegalStateException("视觉模型请求失败: HTTP ${response.code}")
+            val errorDetail = try {
+                val errJson = JSONObject(responseStr)
+                errJson.optString("error", responseStr)
+            } catch (_: Exception) {
+                responseStr
+            }
+            throw IllegalStateException("API 请求失败 (${response.code}): ${errorDetail.take(200)}")
         }
 
-        val json = JSONObject(responseStr)
-        val choices = json.getJSONArray("choices")
-        if (choices.length() == 0) {
-            throw IllegalStateException("视觉模型未返回结果")
+        val json = try {
+            JSONObject(responseStr)
+        } catch (e: Exception) {
+            throw IllegalStateException("API 返回格式异常，无法解析: ${responseStr.take(200)}")
         }
 
-        val messageContent = choices.getJSONObject(0).getJSONObject("message").getString("content")
+        val choices = json.optJSONArray("choices")
+        if (choices == null || choices.length() == 0) {
+            throw IllegalStateException("API 未返回识别结果，请检查模型是否支持图片识别")
+        }
+
+        val messageContent = try {
+            choices.getJSONObject(0).getJSONObject("message").getString("content")
+        } catch (e: Exception) {
+            throw IllegalStateException("API 返回内容格式异常")
+        }
+
         parseAnalysisResult(messageContent)
+    }
+
+    private fun compressAndEncodeImage(imagePath: String): String {
+        val originalFile = File(imagePath)
+        val originalSize = originalFile.length()
+
+        if (originalSize <= 1024 * 1024) {
+            return Base64.encodeToString(originalFile.readBytes(), Base64.NO_WRAP)
+        }
+
+        val options = BitmapFactory.Options().apply {
+            inJustDecodeBounds = true
+        }
+        BitmapFactory.decodeFile(imagePath, options)
+
+        val maxDimension = 1024
+        val scale = maxOf(
+            options.outWidth / maxDimension,
+            options.outHeight / maxDimension,
+            1
+        )
+
+        val decodeOptions = BitmapFactory.Options().apply {
+            inSampleSize = scale
+        }
+        val bitmap = BitmapFactory.decodeFile(imagePath, decodeOptions)
+            ?: return Base64.encodeToString(originalFile.readBytes(), Base64.NO_WRAP)
+
+        val output = ByteArrayOutputStream()
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 70, output)
+        bitmap.recycle()
+
+        val compressed = output.toByteArray()
+        return Base64.encodeToString(compressed, Base64.NO_WRAP)
     }
 
     private fun buildPrompt(): String {
@@ -119,7 +172,12 @@ class VisionClient(private val prefs: PreferencesManager) {
             .removeSuffix("```")
             .trim()
 
-        val json = JSONObject(cleaned)
+        val json = try {
+            JSONObject(cleaned)
+        } catch (e: Exception) {
+            throw IllegalStateException("AI 返回格式错误，期望 JSON 但收到: ${cleaned.take(100)}")
+        }
+
         return VisionAnalysisResult(
             name = json.optString("name", ""),
             category = json.optString("category", "上衣"),
