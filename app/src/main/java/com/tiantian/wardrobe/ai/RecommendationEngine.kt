@@ -33,50 +33,56 @@ class RecommendationEngine(
         val tops = seasonItems.filter { it.category == "上衣" }
         val bottoms = seasonItems.filter { it.category == "下装" }
         val outerwears = seasonItems.filter { it.category == "外套" }
+        val dresses = seasonItems.filter { it.category == "连衣裙" }
         val shoes = seasonItems.filter { it.category == "鞋" }
         val accessories = seasonItems.filter { it.category == "配饰" }
 
-        if (tops.isEmpty() && bottoms.isEmpty()) {
-            if (items.isNotEmpty()) {
-                val first = items.first()
-                return listOf(
-                    OutfitRecommendation(
-                        top = first,
-                        score = 5,
-                        reason = "当前衣柜衣物较少，建议添加更多衣物获取穿搭推荐"
+        // 优先完整搭配：至少有一个 top/dress + bottom
+        val hasUpper = tops.isNotEmpty() || dresses.isNotEmpty()
+        val hasLower = bottoms.isNotEmpty()
+        val hasShoes = shoes.isNotEmpty()
+
+        if (hasUpper && hasLower) {
+            val recommendations = mutableListOf<OutfitRecommendation>()
+            val topList = if (tops.isNotEmpty()) tops else dresses
+            val bottomList = bottoms
+
+            for (i in 0 until minOf(topList.size, 5)) {
+                val top = topList[i]
+                val bottomCandidates = bottomList.shuffled().take(3)
+                for (bottom in bottomCandidates) {
+                    val outfitScore = scoreOutfit(top, bottom, season, term)
+                    val reason = buildReason(top, bottom, season, term)
+                    recommendations.add(
+                        OutfitRecommendation(
+                            top = if (top.category != "连衣裙") top else null,
+                            bottom = if (bottom.category == "下装") bottom else null,
+                            outerwear = outerwears.firstOrNull { outfitScore > 6 },
+                            shoes = shoes.firstOrNull(),
+                            accessory = accessories.firstOrNull(),
+                            score = outfitScore,
+                            reason = reason
+                        )
                     )
-                )
+                }
             }
-            return emptyList()
+
+            recommendations.sortByDescending { it.score }
+            return recommendations.take(count)
         }
 
-        val recommendations = mutableListOf<OutfitRecommendation>()
-
-        val topList = if (tops.isNotEmpty()) tops else items.filter { it.category != "下装" && it.category != "鞋" }
-        val bottomList = if (bottoms.isNotEmpty()) bottoms else items.filter { it.category == "下装" || it.category == "连衣裙" }
-
-        for (i in 0 until minOf(topList.size, 5)) {
-            val top = topList[i]
-            val bottomCandidates = bottomList.shuffled().take(3)
-            for (bottom in bottomCandidates) {
-                val outfitScore = scoreOutfit(top, bottom, season, term)
-                val reason = buildReason(top, bottom, season, term)
-                recommendations.add(
-                    OutfitRecommendation(
-                        top = if (top.category != "连衣裙") top else null,
-                        bottom = if (bottom.category == "下装") bottom else null,
-                        outerwear = outerwears.firstOrNull { outfitScore > 6 },
-                        shoes = shoes.firstOrNull(),
-                        accessory = accessories.firstOrNull(),
-                        score = outfitScore,
-                        reason = reason
-                    )
-                )
-            }
-        }
-
-        recommendations.sortByDescending { it.score }
-        return recommendations.take(count)
+        // 不完整搭配：有什么推什么，不报衣物不足
+        return listOf(
+            OutfitRecommendation(
+                top = tops.firstOrNull() ?: dresses.firstOrNull() ?: items.firstOrNull(),
+                bottom = bottoms.firstOrNull() ?: if (tops.isEmpty() && dresses.isEmpty()) items.firstOrNull() else null,
+                outerwear = outerwears.firstOrNull(),
+                shoes = shoes.firstOrNull(),
+                accessory = accessories.firstOrNull(),
+                score = 5,
+                reason = if (tops.isEmpty() && bottoms.isEmpty()) "当前衣柜衣物较少，已根据现有衣物推荐" else "已根据现有衣物生成推荐"
+            )
+        )
     }
 
     private fun scoreOutfit(

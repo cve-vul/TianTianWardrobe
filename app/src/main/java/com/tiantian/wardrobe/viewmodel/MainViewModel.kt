@@ -115,7 +115,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             if (ruleRecs.isNotEmpty()) {
                 saveAndUpdateRec(ruleRecs.first())
             } else {
-                _uiState.update { it.copy(llmError = "无法生成推荐，衣物不足", llmLoading = false) }
+                val firstItem = items.firstOrNull()
+                if (firstItem != null) {
+                    saveAndUpdateRec(OutfitRecommendation(top = firstItem, score = 1, reason = "根据现有衣物生成"))
+                } else {
+                    _uiState.update { it.copy(llmError = "衣柜中没有衣物，请先添加", llmLoading = false) }
+                }
             }
         }
     }
