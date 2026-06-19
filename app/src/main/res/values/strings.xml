@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">天天衣橱</string>
+    <string name="tab_home">首页</string>
+    <string name="tab_wardrobe">衣柜</string>
+    <string name="tab_profile">我的</string>
+    <string name="add_clothing">添加衣物</string>
+    <string name="take_photo">拍照</string>
+    <string name="from_gallery">从相册选择</string>
+    <string name="cancel">取消</string>
+    <string name="confirm">确认</string>
+    <string name="save">保存</string>
+    <string name="delete">删除</string>
+    <string name="edit">编辑</string>
+    <string name="clothing_name">衣物名称</string>
+    <string name="clothing_category">类别</string>
+    <string name="clothing_color">颜色</string>
+    <string name="clothing_season">季节</string>
+    <string name="clothing_style">风格</string>
+    <string name="total_items">已记录 %d 件衣物</string>
+    <string name="today_recommendation">今日穿搭推荐</string>
+    <string name="no_recommendation">暂无推荐，请先添加衣物</string>
+    <string name="camera_permission_required">需要相机权限才能拍照</string>
+    <string name="grant_permission">授予权限</string>
+    <string name="app_description">智能衣橱管家，让穿搭更简单</string>
+</resources>
