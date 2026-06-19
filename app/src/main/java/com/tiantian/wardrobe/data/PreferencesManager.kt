@@ -7,6 +7,7 @@ class PreferencesManager(context: Context) {
 
     private val prefs = context.getSharedPreferences("tiantian_wardrobe_prefs", Context.MODE_PRIVATE)
 
+    // ---- LLM 推荐接口 (OpenAI 兼容) ----
     var apiKey: String
         get() = prefs.getString(KEY_API_KEY, "") ?: ""
         set(value) = prefs.edit { putString(KEY_API_KEY, value) }
@@ -30,11 +31,43 @@ class PreferencesManager(context: Context) {
         }
     }
 
+    // ---- 视觉模型接口 (豆包 Doubao / 火山方舟) ----
+    var visionApiKey: String
+        get() = prefs.getString(KEY_VISION_API_KEY, "") ?: ""
+        set(value) = prefs.edit { putString(KEY_VISION_API_KEY, value) }
+
+    var visionApiEndpoint: String
+        get() = prefs.getString(KEY_VISION_API_ENDPOINT, DEFAULT_VISION_ENDPOINT) ?: DEFAULT_VISION_ENDPOINT
+        set(value) = prefs.edit { putString(KEY_VISION_API_ENDPOINT, value) }
+
+    var visionModelName: String
+        get() = prefs.getString(KEY_VISION_MODEL_NAME, DEFAULT_VISION_MODEL) ?: DEFAULT_VISION_MODEL
+        set(value) = prefs.edit { putString(KEY_VISION_MODEL_NAME, value) }
+
+    val isVisionConfigured: Boolean
+        get() = visionApiKey.isNotBlank()
+
+    fun clearVision() {
+        prefs.edit {
+            remove(KEY_VISION_API_KEY)
+            remove(KEY_VISION_API_ENDPOINT)
+            remove(KEY_VISION_MODEL_NAME)
+        }
+    }
+
     companion object {
         private const val KEY_API_KEY = "api_key"
         private const val KEY_API_ENDPOINT = "api_endpoint"
         private const val KEY_MODEL_NAME = "model_name"
+
+        private const val KEY_VISION_API_KEY = "vision_api_key"
+        private const val KEY_VISION_API_ENDPOINT = "vision_api_endpoint"
+        private const val KEY_VISION_MODEL_NAME = "vision_model_name"
+
         const val DEFAULT_ENDPOINT = "https://api.openai.com/v1"
         const val DEFAULT_MODEL = "gpt-4o-mini"
+
+        const val DEFAULT_VISION_ENDPOINT = "https://ark.cn-beijing.volces.com/api/v3"
+        const val DEFAULT_VISION_MODEL = "doubao-1.5-vision-pro-32k"
     }
 }

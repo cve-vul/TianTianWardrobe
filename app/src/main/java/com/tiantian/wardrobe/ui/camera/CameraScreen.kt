@@ -9,7 +9,6 @@ import androidx.camera.core.ImageCaptureException
 import androidx.camera.view.LifecycleCameraController
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -18,23 +17,29 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.CameraAlt
+import androidx.compose.material.icons.outlined.PhotoLibrary
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import coil.compose.AsyncImage
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.accompanist.permissions.shouldShowRationale
-import com.tiantian.wardrobe.ai.AnalysisResult
+import com.tiantian.wardrobe.ai.VisionAnalysisResult
+import com.tiantian.wardrobe.viewmodel.MainViewModel
 import java.io.File
 import java.util.concurrent.Executors
 
@@ -46,43 +51,80 @@ data class CaptureState(
     val color: String = "",
     val season: String = "春秋",
     val style: String = "休闲",
-    val analysisResult: AnalysisResult? = null
+    val description: String = ""
 )
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun CameraScreen(
-    onSave: (name: String, imagePath: String, category: String, color: String, season: String, style: String) -> Unit,
-    onBack: () -> Unit
+    viewModel: MainViewModel,
+    initialPhotoPath: String? = null,
+    onPhotoCaptured: (String) -> Unit = {},
+    onSave: (name: String, imagePath: String, category: String, color: String, season: String, style: String, description: String) -> Unit,
+    onBack: () -> Unit,
+    onOpenVisionSettings: () -> Unit
 ) {
     val cameraPermission = rememberPermissionState(Manifest.permission.CAMERA)
     val context = LocalContext.current
-    var captureState by remember { mutableStateOf(CaptureState()) }
-    var showCategoryMenu by remember { mutableStateOf(false) }
-    var showSeasonMenu by remember { mutableStateOf(false) }
-    var showStyleMenu by remember { mutableStateOf(false) }
+    var captureState by remember {
+        mutableStateOf(
+            if (initialPhotoPath != null && initialPhotoPath.isNotEmpty()) {
+                CaptureState(hasPhoto = true, photoPath = initialPhotoPath)
+            } else {
+                CaptureState()
+            }
+        )
+    }
     val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
-
-    val categories = listOf("上衣", "下装", "外套", "连衣裙", "鞋", "配饰")
-    val seasons = listOf("春秋", "夏", "冬")
-    val styles = listOf("休闲", "商务", "运动", "正式")
 
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let {
-            val dest = File(context.cacheDir, "gallery_${System.currentTimeMillis()}.jpg")
+            val dest = File(context.filesDir, "gallery_${System.currentTimeMillis()}.jpg")
             context.contentResolver.openInputStream(it)?.use { input ->
                 dest.outputStream().use { output -> input.copyTo(output) }
             }
             captureState = captureState.copy(hasPhoto = true, photoPath = dest.absolutePath)
+            onPhotoCaptured(dest.absolutePath)
         }
     }
 
     LaunchedEffect(Unit) {
-        if (!cameraPermission.status.isGranted) {
+        if (!cameraPermission.status.isGranted && !captureState.hasPhoto) {
             cameraPermission.launchPermissionRequest()
         }
+    }
+
+    if (captureState.hasPhoto) {
+        EditClothingScreen(
+            captureState = captureState,
+            isVisionConfigured = viewModel.isVisionConfigured,
+            onAnalyze = { path, callback -> viewModel.analyzeClothing(path, callback) },
+            onNameChange = { captureState = captureState.copy(name = it) },
+            onCategoryChange = { captureState = captureState.copy(category = it) },
+            onColorChange = { captureState = captureState.copy(color = it) },
+            onSeasonChange = { captureState = captureState.copy(season = it) },
+            onStyleChange = { captureState = captureState.copy(style = it) },
+            onDescriptionChange = { captureState = captureState.copy(description = it) },
+            onRetakePhoto = {
+                captureState = CaptureState()
+            },
+            onSave = {
+                onSave(
+                    captureState.name,
+                    captureState.photoPath,
+                    captureState.category,
+                    captureState.color,
+                    captureState.season,
+                    captureState.style,
+                    captureState.description
+                )
+            },
+            onOpenVisionSettings = onOpenVisionSettings,
+            onBack = onBack
+        )
+        return
     }
 
     if (!cameraPermission.status.isGranted) {
@@ -93,36 +135,10 @@ fun CameraScreen(
         return
     }
 
-    if (captureState.hasPhoto) {
-        EditClothingScreen(
-            captureState = captureState,
-            onNameChange = { captureState = captureState.copy(name = it) },
-            onCategoryChange = { captureState = captureState.copy(category = it) },
-            onColorChange = { captureState = captureState.copy(color = it) },
-            onSeasonChange = { captureState = captureState.copy(season = it) },
-            onStyleChange = { captureState = captureState.copy(style = it) },
-            showCategoryMenu = showCategoryMenu,
-            showSeasonMenu = showSeasonMenu,
-            showStyleMenu = showStyleMenu,
-            onToggleCategoryMenu = { showCategoryMenu = !showCategoryMenu },
-            onToggleSeasonMenu = { showSeasonMenu = !showSeasonMenu },
-            onToggleStyleMenu = { showStyleMenu = !showStyleMenu },
-            onRetakePhoto = {
-                captureState = CaptureState()
-                showCategoryMenu = false; showSeasonMenu = false; showStyleMenu = false
-            },
-            onSave = {
-                onSave(captureState.name, captureState.photoPath, captureState.category, captureState.color, captureState.season, captureState.style)
-            },
-            onBack = onBack
-        )
-        return
-    }
-
     CameraPreview(
         galleryLauncher = galleryLauncher,
         onCapture = { controller ->
-            val file = File(context.cacheDir, "capture_${System.currentTimeMillis()}.jpg")
+            val file = File(context.filesDir, "capture_${System.currentTimeMillis()}.jpg")
             val outputOptions = ImageCapture.OutputFileOptions.Builder(file).build()
             controller.takePicture(
                 outputOptions,
@@ -130,6 +146,7 @@ fun CameraScreen(
                 object : ImageCapture.OnImageSavedCallback {
                     override fun onImageSaved(output: ImageCapture.OutputFileResults) {
                         captureState = captureState.copy(hasPhoto = true, photoPath = file.absolutePath)
+                        onPhotoCaptured(file.absolutePath)
                     }
                     override fun onError(exception: ImageCaptureException) { }
                 }
@@ -154,7 +171,7 @@ private fun CameraPreview(
         camController.bindToLifecycle(lifecycleOwner)
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         AndroidView(
             factory = { ctx ->
                 PreviewView(ctx).also { previewView ->
@@ -164,27 +181,22 @@ private fun CameraPreview(
             modifier = Modifier.fillMaxSize()
         )
 
-        Column(
+        IconButton(
+            onClick = onBack,
             modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.TopCenter)
-                .padding(top = 48.dp)
-                .padding(horizontal = 16.dp)
+                .align(Alignment.TopStart)
+                .padding(top = 48.dp, start = 16.dp)
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(Color.Black.copy(alpha = 0.4f))
         ) {
-            IconButton(
-                onClick = onBack,
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .background(Color.Black.copy(alpha = 0.4f))
-            ) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "返回", tint = Color.White)
-            }
+            Icon(Icons.Default.ArrowBack, contentDescription = "返回", tint = Color.White)
         }
 
         Row(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 48.dp)
+                .padding(bottom = 60.dp)
                 .fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
@@ -196,15 +208,14 @@ private fun CameraPreview(
                     .clip(CircleShape)
                     .background(Color.Black.copy(alpha = 0.4f))
             ) {
-                Icon(Icons.Default.PhotoLibrary, "从相册选择", tint = Color.White, modifier = Modifier.size(28.dp))
+                Icon(Icons.Outlined.PhotoLibrary, "从相册选择", tint = Color.White, modifier = Modifier.size(24.dp))
             }
 
             Box(
                 modifier = Modifier
-                    .size(72.dp)
+                    .size(68.dp)
                     .clip(CircleShape)
-                    .border(4.dp, Color.White, CircleShape)
-                    .background(Color.White.copy(alpha = 0.2f))
+                    .background(Color.White.copy(alpha = 0.15f))
                     .clickable { onCapture(camController) },
                 contentAlignment = Alignment.Center
             ) {
@@ -223,15 +234,22 @@ private fun CameraPreview(
 private fun PermissionRequest(showRationale: Boolean, onRequestPermission: () -> Unit) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(Icons.Default.CameraAlt, contentDescription = null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f))
+            Icon(
+                Icons.Outlined.CameraAlt,
+                contentDescription = null,
+                modifier = Modifier.size(56.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+            )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = if (showRationale) "需要相机权限才能拍照" else "请授予相机权限",
-                fontSize = 16.sp,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                fontSize = 15.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(16.dp))
-            Button(onClick = onRequestPermission) { Text("授予权限") }
+            Button(onClick = onRequestPermission, shape = RoundedCornerShape(10.dp)) {
+                Text("授予权限")
+            }
         }
     }
 }
@@ -240,25 +258,82 @@ private fun PermissionRequest(showRationale: Boolean, onRequestPermission: () ->
 @Composable
 private fun EditClothingScreen(
     captureState: CaptureState,
+    isVisionConfigured: Boolean,
+    onAnalyze: (String, (VisionAnalysisResult?) -> Unit) -> Unit,
     onNameChange: (String) -> Unit,
     onCategoryChange: (String) -> Unit,
     onColorChange: (String) -> Unit,
     onSeasonChange: (String) -> Unit,
     onStyleChange: (String) -> Unit,
-    showCategoryMenu: Boolean,
-    showSeasonMenu: Boolean,
-    showStyleMenu: Boolean,
-    onToggleCategoryMenu: () -> Unit,
-    onToggleSeasonMenu: () -> Unit,
-    onToggleStyleMenu: () -> Unit,
+    onDescriptionChange: (String) -> Unit,
     onRetakePhoto: () -> Unit,
     onSave: () -> Unit,
+    onOpenVisionSettings: () -> Unit,
     onBack: () -> Unit
 ) {
     val categories = listOf("上衣", "下装", "外套", "连衣裙", "鞋", "配饰")
     val seasons = listOf("春秋", "夏", "冬")
     val styles = listOf("休闲", "商务", "运动", "正式")
     val colors = listOf("白色", "黑色", "红色", "蓝色", "绿色", "黄色", "紫色", "粉色", "灰色", "棕色", "橙色", "其他")
+
+    var showCategoryMenu by remember { mutableStateOf(false) }
+    var showColorMenu by remember { mutableStateOf(false) }
+    var showSeasonMenu by remember { mutableStateOf(false) }
+    var showStyleMenu by remember { mutableStateOf(false) }
+
+    var analyzing by remember { mutableStateOf(false) }
+    var analyzeError by remember { mutableStateOf<String?>(null) }
+    var showNotConfiguredDialog by remember { mutableStateOf(false) }
+    var analysisTriggered by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        if (!analysisTriggered) {
+            analysisTriggered = true
+            if (isVisionConfigured) {
+                analyzing = true
+                onAnalyze(captureState.photoPath) { result ->
+                    analyzing = false
+                    if (result != null) {
+                        onNameChange(result.name)
+                        onCategoryChange(result.category)
+                        onColorChange(result.color)
+                        onSeasonChange(result.season)
+                        onStyleChange(result.style)
+                        onDescriptionChange(result.description)
+                    } else {
+                        analyzeError = "AI 识别失败，请手动填写"
+                    }
+                }
+            } else {
+                showNotConfiguredDialog = true
+            }
+        }
+    }
+
+    if (showNotConfiguredDialog) {
+        AlertDialog(
+            onDismissRequest = { showNotConfiguredDialog = false },
+            title = { Text("需要配置视觉模型", fontWeight = FontWeight.Bold) },
+            text = {
+                Text(
+                    "拍照识别功能需要先配置豆包视觉模型 API，配置后即可自动识别衣物类别、颜色、风格等信息。\n\n是否前往配置？",
+                    fontSize = 14.sp,
+                    lineHeight = 20.sp
+                )
+            },
+            confirmButton = {
+                Button(onClick = {
+                    showNotConfiguredDialog = false
+                    onOpenVisionSettings()
+                }) { Text("去配置") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showNotConfiguredDialog = false }) {
+                    Text("手动填写", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -267,137 +342,158 @@ private fun EditClothingScreen(
             .verticalScroll(rememberScrollState())
     ) {
         TopAppBar(
-            title = { Text("编辑衣物信息") },
+            title = { Text("编辑衣物", fontWeight = FontWeight.Medium) },
             navigationIcon = {
-                IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "返回") }
-            }
+                IconButton(onClick = onBack) {
+                    Icon(Icons.Default.ArrowBack, "返回")
+                }
+            },
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = MaterialTheme.colorScheme.background
+            )
         )
 
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+            // Photo display
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(200.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.05f)),
+                    .height(240.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Image, contentDescription = null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            OutlinedTextField(
-                value = captureState.name,
-                onValueChange = onNameChange,
-                label = { Text("衣物名称") },
-                placeholder = { Text("如：白色衬衫") },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            ExposedDropdownMenuBox(
-                expanded = showCategoryMenu,
-                onExpandedChange = { onToggleCategoryMenu() }
-            ) {
-                OutlinedTextField(
-                    value = captureState.category,
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("类别") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showCategoryMenu) },
-                    modifier = Modifier.fillMaxWidth().menuAnchor(),
-                    shape = RoundedCornerShape(12.dp)
+                AsyncImage(
+                    model = File(captureState.photoPath),
+                    contentDescription = "衣物照片",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
                 )
-                ExposedDropdownMenu(
-                    expanded = showCategoryMenu,
-                    onDismissRequest = { if (showCategoryMenu) onToggleCategoryMenu() }
-                ) {
-                    categories.forEach { cat ->
-                        DropdownMenuItem(
-                            text = { Text(cat) },
-                            onClick = { onCategoryChange(cat); if (showCategoryMenu) onToggleCategoryMenu() }
-                        )
-                    }
-                }
-            }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Text("颜色", fontSize = 14.sp, fontWeight = FontWeight.Medium)
-            Spacer(modifier = Modifier.height(8.dp))
-            Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                colors.chunked(4).forEach { row ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        row.forEach { colorName ->
-                            FilterChip(
-                                selected = captureState.color == colorName,
-                                onClick = { onColorChange(colorName) },
-                                label = { Text(colorName, fontSize = 12.sp) },
-                                leadingIcon = {
-                                    Box(
-                                        modifier = Modifier.size(12.dp).clip(CircleShape).background(colorFromName(colorName))
-                                    )
-                                }
+                if (analyzing) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.Black.copy(alpha = 0.5f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(32.dp),
+                                strokeWidth = 2.dp,
+                                color = Color.White
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                "AI 正在识别衣物...",
+                                fontSize = 13.sp,
+                                color = Color.White
                             )
                         }
                     }
                 }
             }
 
+            analyzeError?.let { error ->
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = error,
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Name field
+            OutlinedTextField(
+                value = captureState.name,
+                onValueChange = onNameChange,
+                label = { Text("衣物名称") },
+                placeholder = { Text("如：白色衬衫") },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(10.dp),
+                singleLine = true
+            )
+
             Spacer(modifier = Modifier.height(12.dp))
 
-            ExposedDropdownMenuBox(
-                expanded = showSeasonMenu,
-                onExpandedChange = { onToggleSeasonMenu() }
-            ) {
-                OutlinedTextField(
-                    value = captureState.season,
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("季节") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showSeasonMenu) },
-                    modifier = Modifier.fillMaxWidth().menuAnchor(),
-                    shape = RoundedCornerShape(12.dp)
-                )
-                ExposedDropdownMenu(
-                    expanded = showSeasonMenu,
-                    onDismissRequest = { if (showSeasonMenu) onToggleSeasonMenu() }
-                ) {
-                    seasons.forEach { s ->
-                        DropdownMenuItem(
-                            text = { Text(s) },
-                            onClick = { onSeasonChange(s); if (showSeasonMenu) onToggleSeasonMenu() }
+            // Category dropdown
+            DropdownField(
+                label = "类别",
+                value = captureState.category,
+                options = categories,
+                expanded = showCategoryMenu,
+                onExpandedChange = { showCategoryMenu = it },
+                onOptionSelected = { onCategoryChange(it); showCategoryMenu = false }
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Color dropdown
+            DropdownField(
+                label = "颜色",
+                value = captureState.color,
+                options = colors,
+                expanded = showColorMenu,
+                onExpandedChange = { showColorMenu = it },
+                onOptionSelected = { onColorChange(it); showColorMenu = false },
+                leadingIcon = {
+                    if (captureState.color.isNotEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .size(16.dp)
+                                .clip(CircleShape)
+                                .background(colorFromName(captureState.color))
                         )
                     }
                 }
-            }
+            )
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            ExposedDropdownMenuBox(
+            // Season dropdown
+            DropdownField(
+                label = "季节",
+                value = captureState.season,
+                options = seasons,
+                expanded = showSeasonMenu,
+                onExpandedChange = { showSeasonMenu = it },
+                onOptionSelected = { onSeasonChange(it); showSeasonMenu = false }
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Style dropdown
+            DropdownField(
+                label = "风格",
+                value = captureState.style,
+                options = styles,
                 expanded = showStyleMenu,
-                onExpandedChange = { onToggleStyleMenu() }
-            ) {
-                OutlinedTextField(
-                    value = captureState.style,
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("风格") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showStyleMenu) },
-                    modifier = Modifier.fillMaxWidth().menuAnchor(),
-                    shape = RoundedCornerShape(12.dp)
-                )
-                ExposedDropdownMenu(
-                    expanded = showStyleMenu,
-                    onDismissRequest = { if (showStyleMenu) onToggleStyleMenu() }
+                onExpandedChange = { showStyleMenu = it },
+                onOptionSelected = { onStyleChange(it); showStyleMenu = false }
+            )
+
+            if (captureState.description.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                 ) {
-                    styles.forEach { s ->
-                        DropdownMenuItem(
-                            text = { Text(s) },
-                            onClick = { onStyleChange(s); if (showStyleMenu) onToggleStyleMenu() }
+                    Row(modifier = Modifier.padding(12.dp)) {
+                        Icon(
+                            Icons.Default.AutoAwesome,
+                            null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = captureState.description,
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            lineHeight = 18.sp
                         )
                     }
                 }
@@ -411,22 +507,61 @@ private fun EditClothingScreen(
             ) {
                 OutlinedButton(
                     onClick = onRetakePhoto,
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(12.dp)
+                    modifier = Modifier.weight(1f).height(48.dp),
+                    shape = RoundedCornerShape(10.dp)
                 ) {
-                    Icon(Icons.Default.Refresh, contentDescription = null)
-                    Spacer(modifier = Modifier.width(4.dp))
                     Text("重拍")
                 }
                 Button(
                     onClick = onSave,
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(12.dp)
+                    modifier = Modifier.weight(1f).height(48.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    enabled = !analyzing
                 ) {
-                    Icon(Icons.Default.Save, contentDescription = null)
-                    Spacer(modifier = Modifier.width(4.dp))
                     Text("保存")
                 }
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DropdownField(
+    label: String,
+    value: String,
+    options: List<String>,
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
+    onOptionSelected: (String) -> Unit,
+    leadingIcon: @Composable (() -> Unit)? = null
+) {
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { onExpandedChange(it) }
+    ) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = {},
+            readOnly = true,
+            label = { Text(label) },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            leadingIcon = leadingIcon,
+            modifier = Modifier.fillMaxWidth().menuAnchor(),
+            shape = RoundedCornerShape(10.dp),
+            singleLine = true
+        )
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { onExpandedChange(false) }
+        ) {
+            options.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(option) },
+                    onClick = { onOptionSelected(option) }
+                )
             }
         }
     }

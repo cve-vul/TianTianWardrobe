@@ -18,40 +18,58 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tiantian.wardrobe.data.PreferencesManager
 
-data class LLMProvider(
+data class VisionProvider(
     val name: String,
     val endpoint: String,
     val models: List<String>
 )
 
-private val providers = listOf(
-    LLMProvider("OpenAI", "https://api.openai.com/v1", listOf("gpt-4o-mini", "gpt-4o", "gpt-4-turbo", "gpt-3.5-turbo")),
-    LLMProvider("DeepSeek", "https://api.deepseek.com/v1", listOf("deepseek-chat", "deepseek-reasoner")),
-    LLMProvider("通义千问", "https://dashscope.aliyuncs.com/compatible-mode/v1", listOf("qwen-turbo", "qwen-plus", "qwen-max")),
-    LLMProvider("豆包 Doubao", "https://ark.cn-beijing.volces.com/api/v3", listOf("doubao-pro-32k", "doubao-pro-4k", "doubao-lite-32k", "doubao-1.5-pro-32k")),
-    LLMProvider("本地 Ollama", "http://localhost:11434/v1", listOf("llama3", "qwen2", "mistral", "phi3"))
+private val visionProviders = listOf(
+    VisionProvider(
+        "豆包 Doubao（火山方舟）",
+        "https://ark.cn-beijing.volces.com/api/v3",
+        listOf("doubao-1.5-vision-pro-32k", "doubao-1.5-vision-lite-32k", "doubao-vision-pro-32k", "doubao-vision-lite-32k")
+    ),
+    VisionProvider(
+        "OpenAI",
+        "https://api.openai.com/v1",
+        listOf("gpt-4o", "gpt-4o-mini", "gpt-4-turbo")
+    ),
+    VisionProvider(
+        "通义千问",
+        "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        listOf("qwen-vl-max", "qwen-vl-plus")
+    )
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ApiSettingsScreen(
+fun VisionSettingsScreen(
     prefs: PreferencesManager,
     onBack: () -> Unit
 ) {
-    var apiKey by remember { mutableStateOf(prefs.apiKey) }
+    var apiKey by remember { mutableStateOf(prefs.visionApiKey) }
     var showKey by remember { mutableStateOf(false) }
     var saved by remember { mutableStateOf(false) }
 
     var selectedProviderIndex by remember {
         mutableStateOf(
-            providers.indexOfFirst { it.endpoint == prefs.apiEndpoint }.takeIf { it >= 0 } ?: 0
+            visionProviders.indexOfFirst { it.endpoint == prefs.visionApiEndpoint }.takeIf { it >= 0 } ?: 0
         )
     }
-    var selectedModel by remember { mutableStateOf(prefs.modelName) }
+    var selectedModel by remember {
+        val provider = visionProviders[
+            visionProviders.indexOfFirst { it.endpoint == prefs.visionApiEndpoint }.takeIf { it >= 0 } ?: 0
+        ]
+        mutableStateOf(
+            if (provider.models.contains(prefs.visionModelName)) prefs.visionModelName
+            else provider.models.first()
+        )
+    }
     var showProviderMenu by remember { mutableStateOf(false) }
     var showModelMenu by remember { mutableStateOf(false) }
 
-    val currentProvider = providers[selectedProviderIndex]
+    val currentProvider = visionProviders[selectedProviderIndex]
     val availableModels = currentProvider.models
 
     Column(
@@ -61,7 +79,7 @@ fun ApiSettingsScreen(
             .verticalScroll(rememberScrollState())
     ) {
         TopAppBar(
-            title = { Text("AI 推荐设置", fontWeight = FontWeight.Medium) },
+            title = { Text("视觉模型设置", fontWeight = FontWeight.Medium) },
             navigationIcon = {
                 IconButton(onClick = onBack) {
                     Icon(Icons.Default.ArrowBack, contentDescription = "返回")
@@ -73,8 +91,46 @@ fun ApiSettingsScreen(
         )
 
         Column(modifier = Modifier.padding(16.dp)) {
+            // Info card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(10.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            ) {
+                Row(
+                    modifier = Modifier.padding(14.dp),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Icon(
+                        Icons.Default.AutoAwesome,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column {
+                        Text(
+                            "视觉识别功能",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            "配置后，拍照添加衣物时将自动调用视觉模型识别衣物的类别、颜色、风格等信息，无需手动填写。",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            lineHeight = 18.sp
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
             Text(
-                text = "选择 AI 服务商",
+                text = "选择服务商",
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -99,11 +155,11 @@ fun ApiSettingsScreen(
                     expanded = showProviderMenu,
                     onDismissRequest = { showProviderMenu = false }
                 ) {
-                    providers.forEach { provider ->
+                    visionProviders.forEach { provider ->
                         DropdownMenuItem(
                             text = { Text(provider.name) },
                             onClick = {
-                                selectedProviderIndex = providers.indexOf(provider)
+                                selectedProviderIndex = visionProviders.indexOf(provider)
                                 selectedModel = provider.models.first()
                                 showProviderMenu = false
                                 saved = false
@@ -123,7 +179,7 @@ fun ApiSettingsScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             Text(
-                text = "选择模型",
+                text = "选择视觉模型",
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -174,7 +230,7 @@ fun ApiSettingsScreen(
             OutlinedTextField(
                 value = apiKey,
                 onValueChange = { apiKey = it; saved = false },
-                placeholder = { Text("sk-...") },
+                placeholder = { Text("输入 API Key") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(10.dp),
                 visualTransformation = if (showKey) VisualTransformation.None else PasswordVisualTransformation(),
@@ -193,9 +249,9 @@ fun ApiSettingsScreen(
 
             Button(
                 onClick = {
-                    prefs.apiKey = apiKey
-                    prefs.apiEndpoint = currentProvider.endpoint
-                    prefs.modelName = selectedModel
+                    prefs.visionApiKey = apiKey
+                    prefs.visionApiEndpoint = currentProvider.endpoint
+                    prefs.visionModelName = selectedModel
                     saved = true
                 },
                 modifier = Modifier.fillMaxWidth().height(48.dp),
@@ -214,14 +270,14 @@ fun ApiSettingsScreen(
                 )
             }
 
-            if (prefs.isConfigured) {
+            if (prefs.isVisionConfigured) {
                 Spacer(modifier = Modifier.height(16.dp))
                 OutlinedButton(
                     onClick = {
-                        prefs.clear()
+                        prefs.clearVision()
                         apiKey = ""
                         selectedProviderIndex = 0
-                        selectedModel = providers[0].models.first()
+                        selectedModel = visionProviders[0].models.first()
                         saved = false
                     },
                     modifier = Modifier.fillMaxWidth().height(48.dp),

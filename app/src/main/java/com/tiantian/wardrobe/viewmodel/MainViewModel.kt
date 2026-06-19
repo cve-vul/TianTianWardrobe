@@ -8,6 +8,8 @@ import com.tiantian.wardrobe.ai.LLMClient
 import com.tiantian.wardrobe.ai.LunarCalendarHelper
 import com.tiantian.wardrobe.ai.OutfitRecommendation
 import com.tiantian.wardrobe.ai.RecommendationEngine
+import com.tiantian.wardrobe.ai.VisionAnalysisResult
+import com.tiantian.wardrobe.ai.VisionClient
 import com.tiantian.wardrobe.data.AppDatabase
 import com.tiantian.wardrobe.data.ClothingItem
 import com.tiantian.wardrobe.data.PreferencesManager
@@ -37,6 +39,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val lunarCalendar = LunarCalendarHelper()
     private val ruleEngine = RecommendationEngine(lunarCalendar)
     private val llmClient = LLMClient(prefs)
+    private val visionClient = VisionClient(prefs)
 
     private val _uiState = MutableStateFlow(UiState())
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
@@ -96,7 +99,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         category: String,
         color: String,
         season: String,
-        style: String
+        style: String,
+        description: String = ""
     ) {
         viewModelScope.launch {
             val item = ClothingItem(
@@ -106,6 +110,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 color = color,
                 season = season,
                 style = style,
+                description = description,
                 createdAt = System.currentTimeMillis()
             )
             dao.insertItem(item)
@@ -128,6 +133,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val item = dao.getItemById(id)
             callback(item)
+        }
+    }
+
+    val isVisionConfigured: Boolean
+        get() = prefs.isVisionConfigured
+
+    fun analyzeClothing(imagePath: String, onResult: (VisionAnalysisResult?) -> Unit) {
+        viewModelScope.launch {
+            val result = try {
+                visionClient.analyzeClothing(imagePath)
+            } catch (_: Exception) {
+                null
+            }
+            onResult(result)
         }
     }
 }

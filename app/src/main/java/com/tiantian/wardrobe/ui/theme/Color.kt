@@ -2,27 +2,31 @@ package com.tiantian.wardrobe.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
-
-val Purple40 = Color(0xFF6750A4)
-val PurpleGrey40 = Color(0xFF625B71)
-val Pink40 = Color(0xFF7D5260)
-
-val Primary = Color(0xFF6750A4)
-val PrimaryVariant = Color(0xFF7C63B6)
-val Secondary = Color(0xFF03DAC6)
-val Background = Color(0xFFF5F0FF)
-val Surface = Color(0xFFFFFFFF)
+// Minimalist monochrome palette
+val Primary = Color(0xFF1C1C1E)
+val PrimaryVariant = Color(0xFF3A3A3C)
 val OnPrimary = Color(0xFFFFFFFF)
-val OnSecondary = Color(0xFF000000)
-val OnBackground = Color(0xFF1C1B1F)
-val OnSurface = Color(0xFF1C1B1F)
 
-val CardBackground = Color(0xFFFFFFFF)
-val CalendarToday = Color(0xFF6750A4)
-val CalendarSelected = Color(0xFFE8DEF8)
-val RecommendationCard = Color(0xFFFFF8E1)
-val AddButtonGradientStart = Color(0xFF7C63B6)
-val AddButtonGradientEnd = Color(0xFF6750A4)
+val Background = Color(0xFFF5F5F7)
+val Surface = Color(0xFFFFFFFF)
+val OnBackground = Color(0xFF1C1C1E)
+val OnSurface = Color(0xFF1C1C1E)
+
+val SurfaceVariant = Color(0xFFF0F0F2)
+val OnSurfaceVariant = Color(0xFF6B6B6E)
+
+val Outline = Color(0xFFD1D1D6)
+val OutlineVariant = Color(0xFFE8E8ED)
+
+// Secondary accent
+val Secondary = Color(0xFF8E8E93)
+val OnSecondary = Color(0xFFFFFFFF)
+
+// Functional
+val Success = Color(0xFF34C759)
+val Error = Color(0xFFFF3B30)
+val Warning = Color(0xFFFF9500)
+
+val Divider = Color(0xFFE5E5EA)
+val Placeholder = Color(0xFFC7C7CC)
+val MutedText = Color(0xFF8E8E93)
