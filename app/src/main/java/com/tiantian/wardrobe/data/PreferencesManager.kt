@@ -41,7 +41,14 @@ class PreferencesManager(context: Context) {
         set(value) = prefs.edit { putString(KEY_VISION_API_ENDPOINT, value) }
 
     var visionModelName: String
-        get() = prefs.getString(KEY_VISION_MODEL_NAME, DEFAULT_VISION_MODEL) ?: DEFAULT_VISION_MODEL
+        get() {
+            val saved = prefs.getString(KEY_VISION_MODEL_NAME, DEFAULT_VISION_MODEL) ?: DEFAULT_VISION_MODEL
+            if (saved == OLD_VISION_MODEL_DEPRECATED) {
+                prefs.edit { putString(KEY_VISION_MODEL_NAME, DEFAULT_VISION_MODEL) }
+                return DEFAULT_VISION_MODEL
+            }
+            return saved
+        }
         set(value) = prefs.edit { putString(KEY_VISION_MODEL_NAME, value) }
 
     val isVisionConfigured: Boolean
@@ -69,5 +76,6 @@ class PreferencesManager(context: Context) {
 
         const val DEFAULT_VISION_ENDPOINT = "https://ark.cn-beijing.volces.com/api/v3"
         const val DEFAULT_VISION_MODEL = "doubao-1.5-vision-pro-250328"
+        private const val OLD_VISION_MODEL_DEPRECATED = "doubao-1.5-vision-pro-32k"
     }
 }
