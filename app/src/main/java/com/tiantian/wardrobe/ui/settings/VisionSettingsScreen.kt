@@ -28,7 +28,7 @@ private val visionProviders = listOf(
     VisionProvider(
         "豆包 Doubao（火山方舟）",
         "https://ark.cn-beijing.volces.com/api/v3",
-        listOf("doubao-1.5-vision-pro-32k", "doubao-1.5-vision-lite-32k", "doubao-vision-pro-32k", "doubao-vision-lite-32k")
+        listOf("doubao-1.5-vision-pro-250328", "doubao-1.5-vision-pro-32k", "doubao-1.5-vision-lite-32k", "doubao-vision-pro-32k", "doubao-vision-lite-32k")
     ),
     VisionProvider(
         "OpenAI",

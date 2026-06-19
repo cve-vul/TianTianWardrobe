@@ -46,14 +46,14 @@ class VisionClient(private val prefs: PreferencesManager) {
 
         val content = JSONArray().apply {
             put(JSONObject().apply {
-                put("type", "text")
-                put("text", prompt)
-            })
-            put(JSONObject().apply {
                 put("type", "image_url")
                 put("image_url", JSONObject().apply {
                     put("url", "data:image/jpeg;base64,$base64Image")
                 })
+            })
+            put(JSONObject().apply {
+                put("type", "text")
+                put("text", prompt)
             })
         }
 
