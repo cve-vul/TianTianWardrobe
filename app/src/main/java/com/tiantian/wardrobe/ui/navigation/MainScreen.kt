@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Checkroom
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
@@ -20,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tiantian.wardrobe.ui.home.HomeScreen
+import com.tiantian.wardrobe.ui.recommend.RecommendScreen
 import com.tiantian.wardrobe.ui.wardrobe.WardrobeScreen
 import com.tiantian.wardrobe.ui.profile.ProfileScreen
 import com.tiantian.wardrobe.viewmodel.MainViewModel
@@ -54,19 +56,22 @@ fun MainScreen(
                 0 -> HomeScreen(
                     itemCount = uiState.itemCount,
                     dayDescription = uiState.dayDescription,
-                    recommendations = uiState.recommendations,
+                    dailyRecommendation = uiState.dailyRecommendation
+                )
+                1 -> RecommendScreen(
+                    dailyRecommendation = uiState.dailyRecommendation,
+                    isLLMConfigured = uiState.useLLM,
                     llmLoading = uiState.llmLoading,
                     llmError = uiState.llmError,
-                    isLLMConfigured = uiState.useLLM,
-                    onRefresh = { viewModel.refreshRecommendations() },
-                    onItemClick = { onItemClick(it.id) }
+                    onGenerate = { viewModel.generateTodayRecommendation() },
+                    onOpenSettings = onOpenSettings
                 )
-                1 -> WardrobeScreen(
+                2 -> WardrobeScreen(
                     items = uiState.items,
                     onItemClick = { onItemClick(it.id) },
                     onDeleteItem = { viewModel.deleteItem(it) }
                 )
-                2 -> ProfileScreen(
+                3 -> ProfileScreen(
                     itemCount = uiState.itemCount,
                     items = uiState.items,
                     isLLMConfigured = uiState.useLLM,
@@ -102,9 +107,10 @@ private fun BottomNavBar(
             verticalAlignment = Alignment.CenterVertically
         ) {
             NavItem(Icons.Outlined.Home, "首页", selectedTab == 0) { onTabSelected(0) }
-            NavItem(Icons.Outlined.Checkroom, "衣柜", selectedTab == 1) { onTabSelected(1) }
+            NavItem(Icons.Outlined.AutoAwesome, "推荐", selectedTab == 1) { onTabSelected(1) }
             AddItem(onAddClick)
-            NavItem(Icons.Outlined.Person, "我的", selectedTab == 2) { onTabSelected(2) }
+            NavItem(Icons.Outlined.Checkroom, "衣柜", selectedTab == 2) { onTabSelected(2) }
+            NavItem(Icons.Outlined.Person, "我的", selectedTab == 3) { onTabSelected(3) }
         }
     }
 }
@@ -124,7 +130,7 @@ private fun NavItem(
                 indication = null,
                 onClick = onClick
             )
-            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .padding(horizontal = 12.dp, vertical = 6.dp)
     ) {
         Icon(
             imageVector = icon,

@@ -15,15 +15,6 @@ import java.util.Date
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
-data class LLMRecommendation(
-    val title: String,
-    val top: String,
-    val bottom: String,
-    val outerwear: String,
-    val shoes: String,
-    val reason: String
-)
-
 class LLMClient(private val prefs: PreferencesManager) {
 
     private val client = OkHttpClient.Builder()
@@ -34,12 +25,12 @@ class LLMClient(private val prefs: PreferencesManager) {
 
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
 
-    suspend fun generateRecommendations(
+    suspend fun generateRecommendation(
         items: List<ClothingItem>,
         season: String,
         solarTerm: String,
         dayDescription: String
-    ): List<OutfitRecommendation> {
+    ): OutfitRecommendation? {
         val prompt = buildPrompt(items, season, solarTerm, dayDescription)
         val responseJson = callAPI(prompt)
         return parseResponse(responseJson, items)
@@ -59,64 +50,70 @@ class LLMClient(private val prefs: PreferencesManager) {
         val outerwears = items.filter { it.category == "外套" }
         val dresses = items.filter { it.category == "连衣裙" }
         val shoes = items.filter { it.category == "鞋" }
-        val accessories = items.filter { it.category == "配饰" }
+
+        val hasTop = tops.isNotEmpty()
+        val hasBottom = bottoms.isNotEmpty()
+        val hasOuterwear = outerwears.isNotEmpty()
+        val hasDress = dresses.isNotEmpty()
+        val hasShoes = shoes.isNotEmpty()
 
         fun formatItems(list: List<ClothingItem>): String {
             if (list.isEmpty()) return "（无）"
             return list.withIndex().joinToString("\n") { (i, item) ->
-                "  ${i + 1}. ${item.name}（颜色:${item.color}, 风格:${item.style}, 季节:${item.season}）"
+                val id = String.format("DB%03d", i + 1)
+                "  $id. ${item.name}（颜色:${item.color}, 风格:${item.style}, 季节:${item.season}）"
             }
         }
 
+        val categories = buildString {
+            append("【上衣】\n${formatItems(tops)}\n\n")
+            append("【下装】\n${formatItems(bottoms)}\n\n")
+            append("【外套】\n${formatItems(outerwears)}\n\n")
+            append("【连衣裙】\n${formatItems(dresses)}\n\n")
+            append("【鞋】\n${formatItems(shoes)}")
+        }
+
+        val requirement = when {
+            hasDress && hasShoes -> "衣柜中有连衣裙和鞋子，请推荐1条连衣裙 + 1双鞋"
+            hasTop && hasBottom && hasShoes -> "衣柜中有上衣、下装、鞋子，请推荐上衣+下装+鞋子各1件"
+            hasTop && hasBottom -> "衣柜中有上衣和下装，请推荐上衣+下装各1件"
+            hasDress -> "只有连衣裙，请推荐1条连衣裙"
+            else -> "衣柜中衣物较少，请根据现有衣物给出简化推荐"
+        }
+
+        val extraNote = if (hasOuterwear) "\n- 如果天气适合，可额外加1件外套" else ""
+
         return """
-你是一个专业的穿搭顾问。请根据以下信息推荐3套今日穿搭组合。
+你是一个专业的穿搭顾问。请根据用户衣柜中实际存在的衣物推荐1套今日穿搭。
 
 日期：$today
 季节：$season
 节气：$solarTerm
 节气描述：$dayDescription
 
-用户的衣柜：
+用户当前衣柜：
+$categories
 
-【上衣】
-${formatItems(tops)}
+穿搭要求：$requirement
 
-【下装】
-${formatItems(bottoms)}
+请以严格的JSON格式返回，不要包含其他文字或markdown标记，格式如下：
+{
+  "top": "上衣名称（无则空字符串）",
+  "bottom": "下装名称（无则空字符串）",
+  "outerwear": "外套名称（无则空字符串）",
+  "dress": "连衣裙名称（无则空字符串，连衣裙需同时填top）",
+  "shoes": "鞋名称（无则空字符串）",
+  "reason": "推荐理由，包括颜色搭配、季节适配、风格协调"
+}
 
-【外套】
-${formatItems(outerwears)}
-
-【连衣裙】
-${formatItems(dresses)}
-
-【鞋】
-${formatItems(shoes)}
-
-【配饰】
-${formatItems(accessories)}
-
-请以严格的JSON数组格式返回3套推荐，不要包含其他文字。格式如下：
-[
-  {
-    "title": "搭配名称",
-    "top": "上衣名称（若无则填空字符串）",
-    "bottom": "下装名称（若无则填空字符串）",
-    "outerwear": "外套名称（若无则填空字符串）",
-    "dress": "连衣裙名称（若无则填空字符串）",
-    "shoes": "鞋名称（若无则填空字符串）",
-    "reason": "推荐理由，包括颜色搭配、季节适配、风格协调等方面"
-  }
-]
-
-注意：
-1. 只使用用户衣柜中列出的衣物，不要编造不存在的衣物
-2. 如果某类衣物不存在，对应字段填空字符串
-3. 连衣裙可作为整体穿搭，此时top和bottom填空
-4. 考虑季节适配性，优先推荐适合当前季节的衣物
-5. 考虑颜色搭配协调性
-6. 如果衣柜衣物不足以组成完整穿搭，请给出可行的简化方案
-""".trimIndent()
+严格规则：
+1. 每件衣物的名称必须与上面衣柜中列出的名称完全一致，不得编造、修改或杜撰任何衣物名称
+2. 如果某类别衣物为空（无），则对应字段填空字符串""
+3. 连衣裙可替代上衣+下装，此时top填连衣裙名，bottom填空
+4. 优先推荐适合「$season」季节的衣物
+5. 优先选择风格一致的衣物组合
+6. 如果衣柜衣物不足以组成完整穿搭，直接填空，不要编造
+$extraNote""".trimIndent()
     }
 
     private suspend fun callAPI(prompt: String): String = withContext(Dispatchers.IO) {
@@ -135,7 +132,7 @@ ${formatItems(accessories)}
             put("model", model)
             put("messages", messages)
             put("temperature", 0.7)
-            put("max_tokens", 2048)
+            put("max_tokens", 1024)
         }
 
         val request = Request.Builder()
@@ -159,52 +156,47 @@ ${formatItems(accessories)}
         ""
     }
 
-    private fun parseResponse(jsonStr: String, items: List<ClothingItem>): List<OutfitRecommendation> {
+    private fun parseResponse(jsonStr: String, items: List<ClothingItem>): OutfitRecommendation? {
         try {
             val cleaned = jsonStr.trim()
                 .removePrefix("```json")
                 .removePrefix("```")
                 .removeSuffix("```")
                 .trim()
-            val arr = JSONArray(cleaned)
-            val results = mutableListOf<OutfitRecommendation>()
+            val obj = JSONObject(cleaned)
+            val topName = obj.optString("top", "")
+            val bottomName = obj.optString("bottom", "")
+            val outerwearName = obj.optString("outerwear", "")
+            val dressName = obj.optString("dress", "")
+            val shoesName = obj.optString("shoes", "")
+            val reason = obj.optString("reason", "")
 
-            for (i in 0 until arr.length()) {
-                val obj = arr.getJSONObject(i)
-                val topName = obj.optString("top", "")
-                val bottomName = obj.optString("bottom", "")
-                val outerwearName = obj.optString("outerwear", "")
-                val dressName = obj.optString("dress", "")
-                val shoesName = obj.optString("shoes", "")
-                val reason = obj.optString("reason", "")
+            val top = if (topName.isNotBlank()) findExactMatch(items, topName) else null
+            val dress = if (dressName.isNotBlank()) findExactMatch(items, dressName) else null
+            val bottom = if (bottomName.isNotBlank()) findExactMatch(items, bottomName) else null
+            val outerwear = if (outerwearName.isNotBlank()) findExactMatch(items, outerwearName) else null
+            val shoes = if (shoesName.isNotBlank()) findExactMatch(items, shoesName) else null
 
-                val top = if (topName.isNotBlank()) findBestMatch(items, topName) else null
-                val bottom = if (bottomName.isNotBlank()) findBestMatch(items, bottomName) else null
-                val dress = if (dressName.isNotBlank()) findBestMatch(items, dressName) else null
-                val outerwear = if (outerwearName.isNotBlank()) findBestMatch(items, outerwearName) else null
-                val shoes = if (shoesName.isNotBlank()) findBestMatch(items, shoesName) else null
+            val resultTop = top ?: dress
 
-                results.add(
-                    OutfitRecommendation(
-                        top = top ?: dress,
-                        bottom = bottom,
-                        outerwear = outerwear,
-                        shoes = shoes,
-                        score = 10,
-                        reason = reason
-                    )
-                )
-            }
-            return results
+            if (resultTop == null && bottom == null && shoes == null) return null
+
+            return OutfitRecommendation(
+                top = resultTop,
+                bottom = bottom,
+                outerwear = outerwear,
+                shoes = shoes,
+                score = 10,
+                reason = reason
+            )
         } catch (_: Exception) {
-            return emptyList()
+            return null
         }
     }
 
-    private fun findBestMatch(items: List<ClothingItem>, name: String): ClothingItem? {
-        val normalized = name.trim().lowercase()
-        val exact = items.firstOrNull { it.name.lowercase() == normalized }
-        if (exact != null) return exact
-        return items.firstOrNull { normalized.contains(it.name.lowercase()) || it.name.lowercase().contains(normalized) }
+    private fun findExactMatch(items: List<ClothingItem>, name: String): ClothingItem? {
+        val target = name.trim()
+        return items.firstOrNull { it.name.trim() == target }
+            ?: items.firstOrNull { it.name.trim().contains(target) || target.contains(it.name.trim()) }
     }
 }

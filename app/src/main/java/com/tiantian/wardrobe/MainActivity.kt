@@ -48,7 +48,7 @@ private fun WardrobeApp() {
             prefs = viewModel.prefs,
             onBack = {
                 showSettings = false
-                viewModel.refreshRecommendations()
+                viewModel.refreshConfiguredStatus()
             }
         )
 

@@ -1,17 +1,12 @@
 package com.tiantian.wardrobe.ui.home
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Checkroom
-import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.WbSunny
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -24,24 +19,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.tiantian.wardrobe.ai.OutfitRecommendation
-import com.tiantian.wardrobe.data.ClothingItem
+import com.tiantian.wardrobe.data.DailyRecommendation
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     itemCount: Int,
     dayDescription: String,
-    recommendations: List<OutfitRecommendation>,
-    llmLoading: Boolean = false,
-    llmError: String? = null,
-    isLLMConfigured: Boolean = false,
-    onRefresh: () -> Unit = {},
-    onItemClick: (ClothingItem) -> Unit
+    dailyRecommendation: DailyRecommendation?
 ) {
     val dateFormat = SimpleDateFormat("yyyy年MM月dd日 EEEE", Locale.CHINESE)
     val today = dateFormat.format(Calendar.getInstance().time)
@@ -54,66 +42,19 @@ fun HomeScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "天天衣橱",
-                    fontSize = 26.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                if (isLLMConfigured) {
-                    IconButton(onClick = onRefresh) {
-                        Icon(Icons.Outlined.Refresh, "刷新推荐", modifier = Modifier.size(22.dp))
-                    }
-                }
-            }
+            Text(
+                text = "天天衣橱",
+                fontSize = 26.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+            )
         }
 
         item { StatsCard(itemCount) }
 
         item { CalendarCard(today, dayDescription) }
 
-        if (llmLoading) {
-            item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(20.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text("AI 正在思考穿搭方案...", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-            }
-        } else if (llmError != null) {
-            item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(llmError, fontSize = 13.sp, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text("已切换为本地规则推荐", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-            }
-        }
-
-        if (recommendations.isNotEmpty()) {
+        if (dailyRecommendation != null) {
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp),
@@ -125,46 +66,10 @@ fun HomeScreen(
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold
                     )
-                    if (isLLMConfigured) {
-                        Text("AI 推荐", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
+                    Text("AI 推荐", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
-
-            items(recommendations) { rec ->
-                RecommendationCard(rec, onItemClick)
-            }
-        } else {
-            item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(32.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Icon(
-                            Icons.Outlined.Checkroom,
-                            null,
-                            modifier = Modifier.size(40.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            "暂无穿搭推荐",
-                            fontSize = 15.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            if (isLLMConfigured) "正在等待 AI 生成推荐..." else "添加更多衣物后获取穿搭推荐",
-                            fontSize = 13.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                        )
-                    }
-                }
-            }
+            item { RecommendationCard(dailyRecommendation) }
         }
     }
 }
@@ -257,76 +162,76 @@ private fun CalendarCard(today: String, dayDescription: String) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun RecommendationCard(
-    recommendation: OutfitRecommendation,
-    onItemClick: (ClothingItem) -> Unit
-) {
+private fun RecommendationCard(recommendation: DailyRecommendation) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        onClick = {
-            recommendation.top?.let { onItemClick(it) }
-                ?: recommendation.bottom?.let { onItemClick(it) }
-        }
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = recommendation.reason.ifEmpty { "AI智能搭配" },
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium
-            )
+            if (recommendation.reason.isNotEmpty()) {
+                Text(
+                    recommendation.reason,
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    lineHeight = 18.sp
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+            }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            val slots = buildList {
+                if (recommendation.dressId > 0 && recommendation.dressId != recommendation.topId)
+                    add(ItemSlot(recommendation.dressName, recommendation.dressImagePath, "连衣裙"))
+                if (recommendation.topId > 0)
+                    add(ItemSlot(recommendation.topName, recommendation.topImagePath, "上衣"))
+                if (recommendation.bottomId > 0)
+                    add(ItemSlot(recommendation.bottomName, recommendation.bottomImagePath, "下装"))
+                if (recommendation.outerwearId > 0)
+                    add(ItemSlot(recommendation.outerwearName, recommendation.outerwearImagePath, "外套"))
+                if (recommendation.shoesId > 0)
+                    add(ItemSlot(recommendation.shoesName, recommendation.shoesImagePath, "鞋"))
+            }
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                recommendation.top?.let { item ->
-                    ClothingThumb(item, onItemClick, Modifier.weight(1f))
-                }
-                recommendation.bottom?.let { item ->
-                    ClothingThumb(item, onItemClick, Modifier.weight(1f))
-                }
-                recommendation.outerwear?.let { item ->
-                    ClothingThumb(item, onItemClick, Modifier.weight(1f))
-                }
-                recommendation.shoes?.let { item ->
-                    ClothingThumb(item, onItemClick, Modifier.weight(1f))
+                slots.forEach { slot ->
+                    ItemCard(slot, Modifier.weight(1f))
                 }
             }
         }
     }
 }
 
+private data class ItemSlot(
+    val name: String,
+    val imagePath: String,
+    val categoryLabel: String
+)
+
 @Composable
-private fun ClothingThumb(
-    item: ClothingItem,
-    onClick: (ClothingItem) -> Unit,
-    modifier: Modifier = Modifier
-) {
+private fun ItemCard(slot: ItemSlot, modifier: Modifier = Modifier) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
             .clip(RoundedCornerShape(8.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-            .clickable { onClick(item) }
             .padding(8.dp)
     ) {
         Box(
             modifier = Modifier
-                .size(48.dp)
+                .aspectRatio(0.75f)
+                .fillMaxWidth()
                 .clip(RoundedCornerShape(6.dp))
                 .background(MaterialTheme.colorScheme.surfaceVariant),
             contentAlignment = Alignment.Center
         ) {
-            if (item.imagePath.isNotEmpty() && File(item.imagePath).exists()) {
+            if (slot.imagePath.isNotEmpty() && File(slot.imagePath).exists()) {
                 AsyncImage(
-                    model = File(item.imagePath),
-                    contentDescription = item.name,
+                    model = File(slot.imagePath),
+                    contentDescription = slot.name,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
@@ -341,10 +246,16 @@ private fun ClothingThumb(
         }
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = item.name.take(4),
+            text = slot.categoryLabel,
             fontSize = 10.sp,
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
+        )
+        Text(
+            text = slot.name.take(6),
+            fontSize = 11.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1
+            maxLines = 1,
+            textAlign = TextAlign.Center
         )
     }
 }

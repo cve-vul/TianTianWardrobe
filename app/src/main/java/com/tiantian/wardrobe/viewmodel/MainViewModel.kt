@@ -12,6 +12,7 @@ import com.tiantian.wardrobe.ai.VisionAnalysisResult
 import com.tiantian.wardrobe.ai.VisionClient
 import com.tiantian.wardrobe.data.AppDatabase
 import com.tiantian.wardrobe.data.ClothingItem
+import com.tiantian.wardrobe.data.DailyRecommendation
 import com.tiantian.wardrobe.data.PreferencesManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,12 +21,16 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 data class UiState(
     val items: List<ClothingItem> = emptyList(),
     val itemCount: Int = 0,
     val dayDescription: String = "",
     val recommendations: List<OutfitRecommendation> = emptyList(),
+    val dailyRecommendation: DailyRecommendation? = null,
     val useLLM: Boolean = false,
     val llmLoading: Boolean = false,
     val llmError: String? = null
@@ -34,6 +39,7 @@ data class UiState(
 class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val db = AppDatabase.getInstance(application)
     private val dao = db.clothingDao()
+    private val recDao = db.dailyRecommendationDao()
     val prefs = PreferencesManager(application)
     private val analyzer = ClothingAnalyzer(application)
     private val lunarCalendar = LunarCalendarHelper()
@@ -45,6 +51,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
     init {
+        loadDailyRecommendation()
         viewModelScope.launch {
             combine(
                 dao.getAllItems(),
@@ -60,37 +67,87 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                             useLLM = prefs.isConfigured
                         )
                     }
-                    generateRecommendations(items)
                 }
         }
     }
 
-    private suspend fun generateRecommendations(items: List<ClothingItem>) {
-        if (prefs.isConfigured) {
+    private fun loadDailyRecommendation() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val rec = recDao.getRecommendationOnce()
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            val today = dateFormat.format(Date())
+            val validRec = if (rec != null && rec.date == today) rec else null
+            _uiState.update { it.copy(dailyRecommendation = validRec) }
+        }
+    }
+
+    fun refreshConfiguredStatus() {
+        _uiState.update { it.copy(useLLM = prefs.isConfigured) }
+    }
+
+    fun generateTodayRecommendation() {
+        viewModelScope.launch {
+            val items = _uiState.value.items
+            if (items.isEmpty()) {
+                _uiState.update { it.copy(llmError = "衣柜中没有衣物，请先添加", llmLoading = false) }
+                return@launch
+            }
+
+            val season = lunarCalendar.getClothingSeason()
+            val solarTerm = lunarCalendar.getNearestSolarTerm()?.name ?: ""
+            val dayDesc = lunarCalendar.getDayDescription()
+
             _uiState.update { it.copy(llmLoading = true, llmError = null) }
-            try {
-                val llmRecs = llmClient.generateRecommendations(
-                    items = items,
-                    season = lunarCalendar.getClothingSeason(),
-                    solarTerm = lunarCalendar.getNearestSolarTerm()?.name ?: "",
-                    dayDescription = lunarCalendar.getDayDescription()
-                )
-                if (llmRecs.isNotEmpty()) {
-                    _uiState.update { it.copy(recommendations = llmRecs, llmLoading = false) }
-                    return
+
+            if (prefs.isConfigured) {
+                try {
+                    val rec = llmClient.generateRecommendation(items, season, solarTerm, dayDesc)
+                    if (rec != null) {
+                        saveAndUpdateRec(rec)
+                        return@launch
+                    }
+                } catch (e: Exception) {
+                    _uiState.update { it.copy(llmError = "AI 推荐失败: ${e.message}", llmLoading = false) }
                 }
-            } catch (e: Exception) {
-                _uiState.update { it.copy(llmError = "AI 推荐失败: ${e.message}", llmLoading = false) }
+            }
+
+            val ruleRecs = ruleEngine.recommend(items)
+            if (ruleRecs.isNotEmpty()) {
+                saveAndUpdateRec(ruleRecs.first())
+            } else {
+                _uiState.update { it.copy(llmError = "无法生成推荐，衣物不足", llmLoading = false) }
             }
         }
-        val ruleRecs = ruleEngine.recommend(items)
-        _uiState.update { it.copy(recommendations = ruleRecs, llmLoading = false) }
     }
 
-    fun refreshRecommendations() {
-        viewModelScope.launch {
-            generateRecommendations(_uiState.value.items)
-        }
+    private suspend fun saveAndUpdateRec(rec: OutfitRecommendation) {
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        val today = dateFormat.format(Date())
+
+        val daily = DailyRecommendation(
+            id = 1,
+            date = today,
+            topName = rec.top?.name ?: "",
+            topId = rec.top?.id ?: 0,
+            topImagePath = rec.top?.imagePath ?: "",
+            bottomName = rec.bottom?.name ?: "",
+            bottomId = rec.bottom?.id ?: 0,
+            bottomImagePath = rec.bottom?.imagePath ?: "",
+            outerwearName = rec.outerwear?.name ?: "",
+            outerwearId = rec.outerwear?.id ?: 0,
+            outerwearImagePath = rec.outerwear?.imagePath ?: "",
+            shoesName = rec.shoes?.name ?: "",
+            shoesId = rec.shoes?.id ?: 0,
+            shoesImagePath = rec.shoes?.imagePath ?: "",
+            dressName = if (rec.top != null && rec.top.category == "连衣裙") rec.top.name else "",
+            dressId = if (rec.top != null && rec.top.category == "连衣裙") rec.top.id else 0,
+            dressImagePath = if (rec.top != null && rec.top.category == "连衣裙") rec.top.imagePath else "",
+            reason = rec.reason,
+            createdAt = System.currentTimeMillis()
+        )
+
+        recDao.upsert(daily)
+        _uiState.update { it.copy(dailyRecommendation = daily, llmLoading = false, llmError = null) }
     }
 
     fun addItem(
@@ -126,6 +183,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun resetAllData() {
         viewModelScope.launch {
             _uiState.value.items.forEach { dao.deleteItem(it) }
+            recDao.deleteAll()
         }
     }
 
