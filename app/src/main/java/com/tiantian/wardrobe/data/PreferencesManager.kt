@@ -72,7 +72,7 @@ class PreferencesManager(context: Context) {
         private const val KEY_VISION_MODEL_NAME = "vision_model_name"
 
         const val DEFAULT_ENDPOINT = "https://api.openai.com/v1"
-        const val DEFAULT_MODEL = "gpt-4o-mini"
+        const val DEFAULT_MODEL = "doubao-1-5-pro-32k-250115"
 
         const val DEFAULT_VISION_ENDPOINT = "https://ark.cn-beijing.volces.com/api/v3"
         const val DEFAULT_VISION_MODEL = "doubao-1.5-vision-pro-250328"

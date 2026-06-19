@@ -28,7 +28,7 @@ private val providers = listOf(
     LLMProvider("OpenAI", "https://api.openai.com/v1", listOf("gpt-4o-mini", "gpt-4o", "gpt-4-turbo", "gpt-3.5-turbo")),
     LLMProvider("DeepSeek", "https://api.deepseek.com/v1", listOf("deepseek-chat", "deepseek-reasoner")),
     LLMProvider("通义千问", "https://dashscope.aliyuncs.com/compatible-mode/v1", listOf("qwen-turbo", "qwen-plus", "qwen-max")),
-    LLMProvider("豆包 Doubao", "https://ark.cn-beijing.volces.com/api/v3", listOf("doubao-pro-32k", "doubao-pro-4k", "doubao-lite-32k", "doubao-1.5-pro-32k")),
+    LLMProvider("豆包 Doubao", "https://ark.cn-beijing.volces.com/api/v3", listOf("doubao-1-5-pro-32k-250115", "doubao-pro-32k", "doubao-pro-4k", "doubao-lite-32k", "doubao-1.5-pro-32k")),
     LLMProvider("本地 Ollama", "http://localhost:11434/v1", listOf("llama3", "qwen2", "mistral", "phi3"))
 )
 

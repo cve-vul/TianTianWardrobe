@@ -40,6 +40,7 @@ fun ProfileScreen(
 ) {
     var showResetDialog by remember { mutableStateOf(false) }
     var showStorageDialog by remember { mutableStateOf(false) }
+    var showAboutDialog by remember { mutableStateOf(false) }
 
     if (showResetDialog) {
         AlertDialog(
@@ -80,6 +81,33 @@ fun ProfileScreen(
             },
             confirmButton = {
                 TextButton(onClick = { showStorageDialog = false }) { Text("关闭") }
+            }
+        )
+    }
+
+    if (showAboutDialog) {
+        AlertDialog(
+            onDismissRequest = { showAboutDialog = false },
+            title = { Text("应用介绍", fontWeight = FontWeight.Bold) },
+            text = {
+                Column {
+                    StorageInfoRow("应用名称", "天天衣橱")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    StorageInfoRow("版本号", "v1.0.4")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    StorageInfoRow("Author", "小陈")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    StorageInfoRow("应用描述", "智能穿搭助手")
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        "一款轻量、便捷的衣橱管理工具，帮你记录衣物、智能搭配。",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showAboutDialog = false }) { Text("关闭") }
             }
         )
     }
@@ -177,7 +205,7 @@ fun ProfileScreen(
                 icon = Icons.Outlined.Info,
                 title = "应用介绍",
                 subtitle = "天天衣橱 - 智能穿搭助手",
-                onClick = { }
+                onClick = { showAboutDialog = true }
             )
         }
 
@@ -222,7 +250,7 @@ fun ProfileScreen(
 
         Spacer(modifier = Modifier.height(48.dp))
         Text(
-            "天天衣橱 v1.0",
+            "天天衣橱 v1.0.4",
             fontSize = 12.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
             modifier = Modifier.fillMaxWidth().padding(16.dp),
