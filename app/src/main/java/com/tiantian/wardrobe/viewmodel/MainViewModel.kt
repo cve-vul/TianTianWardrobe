@@ -4,11 +4,14 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.tiantian.wardrobe.ai.ClothingAnalyzer
+import com.tiantian.wardrobe.ai.LLMClient
 import com.tiantian.wardrobe.ai.LunarCalendarHelper
 import com.tiantian.wardrobe.ai.OutfitRecommendation
 import com.tiantian.wardrobe.ai.RecommendationEngine
 import com.tiantian.wardrobe.data.AppDatabase
 import com.tiantian.wardrobe.data.ClothingItem
+import com.tiantian.wardrobe.data.PreferencesManager
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,15 +23,20 @@ data class UiState(
     val items: List<ClothingItem> = emptyList(),
     val itemCount: Int = 0,
     val dayDescription: String = "",
-    val recommendations: List<OutfitRecommendation> = emptyList()
+    val recommendations: List<OutfitRecommendation> = emptyList(),
+    val useLLM: Boolean = false,
+    val llmLoading: Boolean = false,
+    val llmError: String? = null
 )
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val db = AppDatabase.getInstance(application)
     private val dao = db.clothingDao()
+    val prefs = PreferencesManager(application)
     private val analyzer = ClothingAnalyzer(application)
     private val lunarCalendar = LunarCalendarHelper()
-    private val recommendationEngine = RecommendationEngine(lunarCalendar)
+    private val ruleEngine = RecommendationEngine(lunarCalendar)
+    private val llmClient = LLMClient(prefs)
 
     private val _uiState = MutableStateFlow(UiState())
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
@@ -38,19 +46,47 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             combine(
                 dao.getAllItems(),
                 dao.getItemCount()
-            ) { items, count ->
-                Pair(items, count)
-            }.collect { (items, count) ->
-                val recommendations = recommendationEngine.recommend(items)
-                _uiState.update {
-                    it.copy(
-                        items = items,
-                        itemCount = count,
-                        dayDescription = lunarCalendar.getDayDescription(),
-                        recommendations = recommendations
-                    )
+            ) { items, count -> Pair(items, count) }
+                .collect { (items, count) ->
+                    val dayDesc = lunarCalendar.getDayDescription()
+                    _uiState.update {
+                        it.copy(
+                            items = items,
+                            itemCount = count,
+                            dayDescription = dayDesc,
+                            useLLM = prefs.isConfigured
+                        )
+                    }
+                    generateRecommendations(items)
                 }
+        }
+    }
+
+    private suspend fun generateRecommendations(items: List<ClothingItem>) {
+        if (prefs.isConfigured) {
+            _uiState.update { it.copy(llmLoading = true, llmError = null) }
+            try {
+                val llmRecs = llmClient.generateRecommendations(
+                    items = items,
+                    season = lunarCalendar.getClothingSeason(),
+                    solarTerm = lunarCalendar.getNearestSolarTerm()?.name ?: "",
+                    dayDescription = lunarCalendar.getDayDescription()
+                )
+                if (llmRecs.isNotEmpty()) {
+                    _uiState.update { it.copy(recommendations = llmRecs, llmLoading = false) }
+                    return
+                }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(llmError = "AI 推荐失败: ${e.message}", llmLoading = false) }
             }
+        }
+        val ruleRecs = ruleEngine.recommend(items)
+        _uiState.update { it.copy(recommendations = ruleRecs, llmLoading = false) }
+    }
+
+    fun refreshRecommendations() {
+        viewModelScope.launch {
+            generateRecommendations(_uiState.value.items)
         }
     }
 

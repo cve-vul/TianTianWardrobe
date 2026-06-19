@@ -25,7 +25,8 @@ import com.tiantian.wardrobe.viewmodel.MainViewModel
 fun MainScreen(
     viewModel: MainViewModel,
     onAddClick: () -> Unit,
-    onItemClick: (Long) -> Unit
+    onItemClick: (Long) -> Unit,
+    onOpenSettings: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var selectedTab by remember { mutableStateOf(0) }
@@ -67,6 +68,10 @@ fun MainScreen(
                     itemCount = uiState.itemCount,
                     dayDescription = uiState.dayDescription,
                     recommendations = uiState.recommendations,
+                    llmLoading = uiState.llmLoading,
+                    llmError = uiState.llmError,
+                    isLLMConfigured = uiState.useLLM,
+                    onRefresh = { viewModel.refreshRecommendations() },
                     onItemClick = { onItemClick(it.id) }
                 )
                 1 -> WardrobeScreen(
@@ -77,6 +82,8 @@ fun MainScreen(
                 2 -> ProfileScreen(
                     itemCount = uiState.itemCount,
                     items = uiState.items,
+                    isLLMConfigured = uiState.useLLM,
+                    onOpenSettings = onOpenSettings,
                     onResetData = { viewModel.resetAllData() }
                 )
             }

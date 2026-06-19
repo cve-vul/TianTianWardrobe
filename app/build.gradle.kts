@@ -85,4 +85,6 @@ dependencies {
     implementation(libs.mlkit.image.labeling)
 
     implementation(libs.accompanist.permissions)
+
+    implementation(libs.okhttp)
 }

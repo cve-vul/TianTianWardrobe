@@ -7,9 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.Checkroom
-import androidx.compose.material.icons.filled.WbSunny
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -33,6 +31,10 @@ fun HomeScreen(
     itemCount: Int,
     dayDescription: String,
     recommendations: List<OutfitRecommendation>,
+    llmLoading: Boolean = false,
+    llmError: String? = null,
+    isLLMConfigured: Boolean = false,
+    onRefresh: () -> Unit = {},
     onItemClick: (ClothingItem) -> Unit
 ) {
     val dateFormat = SimpleDateFormat("yyyy年MM月dd日 EEEE", Locale.CHINESE)
@@ -46,28 +48,84 @@ fun HomeScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
-            Text(
-                text = "天天衣橱",
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "天天衣橱",
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                if (isLLMConfigured) {
+                    IconButton(onClick = onRefresh) {
+                        Icon(Icons.Default.Refresh, "刷新推荐", tint = MaterialTheme.colorScheme.primary)
+                    }
+                }
+            }
         }
 
         item { StatsCard(itemCount) }
 
         item { CalendarCard(today, dayDescription) }
 
+        if (llmLoading) {
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        CircularProgressIndicator(modifier = Modifier.size(36.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text("AI 正在思考穿搭方案...", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                    }
+                }
+            }
+        } else if (llmError != null) {
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE))
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(Icons.Default.ErrorOutline, null, tint = Color(0xFFE53935), modifier = Modifier.size(28.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(llmError, fontSize = 13.sp, color = Color(0xFFC62828), textAlign = TextAlign.Center)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("已切换为本地规则推荐", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
+                    }
+                }
+            }
+        }
+
         if (recommendations.isNotEmpty()) {
             item {
-                Text(
-                    text = "今日穿搭推荐",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "今日穿搭推荐",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    if (isLLMConfigured) {
+                        Text("AI 推荐", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+                    }
+                }
             }
 
             items(recommendations) { rec ->
@@ -84,24 +142,12 @@ fun HomeScreen(
                         modifier = Modifier.padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Checkroom,
-                            contentDescription = null,
-                            modifier = Modifier.size(48.dp),
-                            tint = Color(0xFFB8860B)
-                        )
+                        Icon(Icons.Default.Checkroom, null, modifier = Modifier.size(48.dp), tint = Color(0xFFB8860B))
                         Spacer(modifier = Modifier.height(12.dp))
+                        Text("暂无穿搭推荐", fontSize = 18.sp, fontWeight = FontWeight.Medium, color = Color(0xFF8B6914))
                         Text(
-                            text = "暂无穿搭推荐",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Color(0xFF8B6914)
-                        )
-                        Text(
-                            text = "添加更多衣物后，AI将为你智能推荐穿搭",
-                            fontSize = 14.sp,
-                            color = Color(0xFF8B6914),
-                            textAlign = TextAlign.Center
+                            if (isLLMConfigured) "正在等待 AI 生成推荐..." else "添加更多衣物后获取穿搭推荐",
+                            fontSize = 14.sp, color = Color(0xFF8B6914), textAlign = TextAlign.Center
                         )
                     }
                 }
