@@ -93,7 +93,7 @@ fun ProfileScreen(
                 Column {
                     StorageInfoRow("应用名称", "天天衣橱")
                     Spacer(modifier = Modifier.height(8.dp))
-                    StorageInfoRow("版本号", "v1.0.5")
+                    StorageInfoRow("版本号", "v1.0.6")
                     Spacer(modifier = Modifier.height(8.dp))
                     StorageInfoRow("Author", "小陈")
                     Spacer(modifier = Modifier.height(8.dp))
@@ -250,7 +250,7 @@ fun ProfileScreen(
 
         Spacer(modifier = Modifier.height(48.dp))
         Text(
-            "天天衣橱 v1.0.5",
+            "天天衣橱 v1.0.6",
             fontSize = 12.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
             modifier = Modifier.fillMaxWidth().padding(16.dp),
