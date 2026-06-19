@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -146,16 +147,18 @@ private fun CameraPreview(
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
-    var controller by remember { mutableStateOf<LifecycleCameraController?>(null) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val camController = remember { LifecycleCameraController(context) }
+
+    LaunchedEffect(lifecycleOwner) {
+        camController.bindToLifecycle(lifecycleOwner)
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         AndroidView(
             factory = { ctx ->
                 PreviewView(ctx).also { previewView ->
-                    LifecycleCameraController(ctx).also { camController ->
-                        camController.bindToLifecycle(previewView)
-                        controller = camController
-                    }
+                    previewView.controller = camController
                 }
             },
             modifier = Modifier.fillMaxSize()
@@ -196,23 +199,21 @@ private fun CameraPreview(
                 Icon(Icons.Default.PhotoLibrary, "从相册选择", tint = Color.White, modifier = Modifier.size(28.dp))
             }
 
-            controller?.let { camController ->
+            Box(
+                modifier = Modifier
+                    .size(72.dp)
+                    .clip(CircleShape)
+                    .border(4.dp, Color.White, CircleShape)
+                    .background(Color.White.copy(alpha = 0.2f))
+                    .clickable { onCapture(camController) },
+                contentAlignment = Alignment.Center
+            ) {
                 Box(
                     modifier = Modifier
-                        .size(72.dp)
+                        .size(56.dp)
                         .clip(CircleShape)
-                        .border(4.dp, Color.White, CircleShape)
-                        .background(Color.White.copy(alpha = 0.2f))
-                        .clickable { onCapture(camController) },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(56.dp)
-                            .clip(CircleShape)
-                            .background(Color.White)
-                    )
-                }
+                        .background(Color.White)
+                )
             }
         }
     }
