@@ -1,7 +1,17 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.ksp)
+}
+
+val keystorePropertiesFile = rootProject.file("app/keystore/keystore.properties")
+val keystoreProperties = Properties().apply {
+    if (keystorePropertiesFile.exists()) {
+        load(FileInputStream(keystorePropertiesFile))
+    }
 }
 
 android {
@@ -21,9 +31,21 @@ android {
         }
     }
 
+    signingConfigs {
+        create("release") {
+            if (keystorePropertiesFile.exists()) {
+                storeFile = file("keystore/${keystoreProperties["storeFile"]}")
+                storePassword = keystoreProperties["storePassword"] as String
+                keyAlias = keystoreProperties["keyAlias"] as String
+                keyPassword = keystoreProperties["keyPassword"] as String
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.findByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -52,6 +74,36 @@ android {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
+    }
+}
+
+// Auto-generate keystore if missing (first build or CI)
+tasks.register("generateKeystore") {
+    doLast {
+        val ksDir = file("app/keystore")
+        if (!ksDir.exists()) ksDir.mkdirs()
+        val ksFile = ksDir.resolve("release.keystore")
+        if (!ksFile.exists() && keystorePropertiesFile.exists()) {
+            exec {
+                workingDir = ksDir
+                commandLine("keytool", "-genkey", "-v",
+                    "-keystore", "release.keystore",
+                    "-alias", keystoreProperties["keyAlias"] as String,
+                    "-keyalg", "RSA",
+                    "-keysize", "2048",
+                    "-validity", "10000",
+                    "-storepass", keystoreProperties["storePassword"] as String,
+                    "-keypass", keystoreProperties["keyPassword"] as String,
+                    "-dname", "CN=TianTianWardrobe, OU=Dev, O=TianTian, L=Unknown, ST=Unknown, C=CN"
+                )
+            }
+        }
+    }
+}
+
+tasks.whenTaskAdded {
+    if (name == "assembleRelease") {
+        dependsOn("generateKeystore")
     }
 }
 
