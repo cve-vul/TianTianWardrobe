@@ -38,35 +38,50 @@ fun HomeScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // Header
         item {
             Text(
                 text = "天天衣橱",
-                fontSize = 26.sp,
-                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.displayLarge,
+                color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
             )
         }
 
+        // Stats card
         item { StatsCard(itemCount) }
 
+        // Calendar card
         item { CalendarCard(today, dayDescription) }
 
+        // Recommendation section
         if (dailyRecommendation != null) {
             item {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
                         text = "今日穿搭推荐",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = MaterialTheme.colorScheme.onBackground
                     )
-                    Text("AI 推荐", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f)
+                    ) {
+                        Text(
+                            "AI 推荐",
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSecondary
+                        )
+                    }
                 }
             }
             item { RecommendationCard(dailyRecommendation) }
@@ -76,86 +91,98 @@ fun HomeScreen(
 
 @Composable
 private fun StatsCard(itemCount: Int) {
-    Card(
+    Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary)
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 1.dp
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(20.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = "$itemCount",
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimary
-                )
+        Box(modifier = Modifier.fillMaxWidth().padding(24.dp)) {
+            Column {
                 Text(
                     text = "已收录衣物",
-                    fontSize = 13.sp,
-                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(
+                        text = "$itemCount",
+                        style = MaterialTheme.typography.displayLarge.copy(fontSize = 40.sp),
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "件",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 6.dp)
+                    )
+                }
             }
-            Box(
+            // Decorative icon
+            Icon(
+                Icons.Outlined.Checkroom,
+                contentDescription = null,
                 modifier = Modifier
-                    .width(1.dp)
-                    .height(40.dp)
-                    .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.2f))
+                    .align(Alignment.TopEnd)
+                    .size(40.dp),
+                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
             )
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(
-                    Icons.Outlined.Checkroom,
-                    null,
-                    modifier = Modifier.size(28.dp),
-                    tint = MaterialTheme.colorScheme.onPrimary
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "智能管理",
-                    fontSize = 13.sp,
-                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
-                )
-            }
         }
     }
 }
 
 @Composable
 private fun CalendarCard(today: String, dayDescription: String) {
-    Card(
+    Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 1.dp
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    Icons.Outlined.CalendarMonth,
-                    null,
-                    modifier = Modifier.size(20.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(today, fontSize = 15.sp, fontWeight = FontWeight.Medium)
-            }
-            if (dayDescription.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            modifier = Modifier.padding(20.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                modifier = Modifier.size(44.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
                     Icon(
-                        Icons.Outlined.WbSunny,
-                        null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(16.dp)
+                        Icons.Outlined.CalendarMonth,
+                        contentDescription = null,
+                        modifier = Modifier.size(22.dp),
+                        tint = MaterialTheme.colorScheme.primary
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        dayDescription,
-                        fontSize = 13.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                }
+            }
+            Spacer(modifier = Modifier.width(14.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = today,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                if (dayDescription.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Outlined.WbSunny,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            dayDescription,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
         }
@@ -164,20 +191,21 @@ private fun CalendarCard(today: String, dayDescription: String) {
 
 @Composable
 private fun RecommendationCard(recommendation: DailyRecommendation) {
-    Card(
+    Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 1.dp
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(20.dp)) {
             if (recommendation.reason.isNotEmpty()) {
                 Text(
                     recommendation.reason,
-                    fontSize = 13.sp,
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     lineHeight = 18.sp
                 )
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(14.dp))
             }
 
             val slots = buildList {
@@ -195,7 +223,7 @@ private fun RecommendationCard(recommendation: DailyRecommendation) {
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 slots.forEach { slot ->
                     ItemCard(slot, Modifier.weight(1f))
@@ -216,15 +244,15 @@ private fun ItemCard(slot: ItemSlot, modifier: Modifier = Modifier) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
             .padding(8.dp)
     ) {
         Box(
             modifier = Modifier
                 .aspectRatio(0.75f)
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(6.dp))
+                .clip(RoundedCornerShape(8.dp))
                 .background(MaterialTheme.colorScheme.surfaceVariant),
             contentAlignment = Alignment.Center
         ) {
@@ -238,9 +266,9 @@ private fun ItemCard(slot: ItemSlot, modifier: Modifier = Modifier) {
             } else {
                 Icon(
                     Icons.Outlined.Checkroom,
-                    null,
+                    contentDescription = null,
                     modifier = Modifier.size(24.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
                 )
             }
         }
@@ -248,12 +276,13 @@ private fun ItemCard(slot: ItemSlot, modifier: Modifier = Modifier) {
         Text(
             text = slot.categoryLabel,
             fontSize = 10.sp,
-            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
         )
         Text(
             text = slot.name.take(6),
             fontSize = 11.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = MaterialTheme.colorScheme.onSurface,
             maxLines = 1,
             textAlign = TextAlign.Center
         )

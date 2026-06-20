@@ -48,34 +48,39 @@ fun WardrobeScreen(
     ) {
         Text(
             text = "我的衣柜",
-            fontSize = 26.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 12.dp)
+            style = MaterialTheme.typography.displayLarge,
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.padding(start = 20.dp, top = 16.dp, bottom = 12.dp)
         )
 
+        // Category chips
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 4.dp),
+                .padding(horizontal = 20.dp, vertical = 4.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             categories.forEach { category ->
-                FilterChip(
-                    selected = selectedCategory == category,
-                    onClick = { selectedCategory = category },
-                    label = { Text(category, fontSize = 13.sp) },
-                    shape = RoundedCornerShape(8.dp),
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = MaterialTheme.colorScheme.primary,
-                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                val isSelected = selectedCategory == category
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = if (isSelected) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.surfaceVariant,
+                    modifier = Modifier.clickable { selectedCategory = category }
+                ) {
+                    Text(
+                        text = category,
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                        fontSize = 13.sp,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                        color = if (isSelected) MaterialTheme.colorScheme.onPrimary
+                        else MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                )
+                }
             }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         if (filteredItems.isEmpty()) {
             Box(
@@ -85,21 +90,22 @@ fun WardrobeScreen(
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(
                         Icons.Outlined.Checkroom,
-                        null,
-                        modifier = Modifier.size(48.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+                        contentDescription = null,
+                        modifier = Modifier.size(56.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.25f)
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
                     Text(
                         text = if (items.isEmpty()) "衣柜空空如也" else "该分类暂无衣物",
-                        fontSize = 15.sp,
+                        style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     if (items.isEmpty()) {
                         Text(
-                            "点击下方加号添加衣物",
-                            fontSize = 13.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                            "点击下方添加按钮开始收录",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                            modifier = Modifier.padding(top = 4.dp)
                         )
                     }
                 }
@@ -107,9 +113,9 @@ fun WardrobeScreen(
         } else {
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
-                contentPadding = PaddingValues(16.dp),
+                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
                 modifier = Modifier.weight(1f)
             ) {
                 items(filteredItems, key = { it.id }) { item ->
@@ -122,19 +128,20 @@ fun WardrobeScreen(
 
 @Composable
 private fun ClothingCard(item: ClothingItem, onClick: () -> Unit) {
-    Card(
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() },
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 1.dp
     ) {
         Column {
             // Photo
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(120.dp)
+                    .height(140.dp)
                     .background(MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center
             ) {
@@ -148,19 +155,18 @@ private fun ClothingCard(item: ClothingItem, onClick: () -> Unit) {
                 } else {
                     Icon(
                         Icons.Outlined.Checkroom,
-                        null,
-                        modifier = Modifier.size(36.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                        contentDescription = null,
+                        modifier = Modifier.size(40.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
                     )
                 }
             }
 
             // Info
-            Column(modifier = Modifier.padding(12.dp)) {
+            Column(modifier = Modifier.padding(14.dp)) {
                 Text(
                     text = item.name.ifEmpty { "未命名" },
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
+                    style = MaterialTheme.typography.titleMedium,
                     maxLines = 1,
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -178,7 +184,7 @@ private fun ClothingCard(item: ClothingItem, onClick: () -> Unit) {
                     if (item.color.isNotEmpty()) {
                         Box(
                             modifier = Modifier
-                                .size(10.dp)
+                                .size(12.dp)
                                 .clip(CircleShape)
                                 .background(colorFromName(item.color))
                         )
@@ -194,11 +200,12 @@ private fun Tag(text: String) {
     Text(
         text = text,
         fontSize = 10.sp,
+        fontWeight = FontWeight.Medium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier
-            .clip(RoundedCornerShape(4.dp))
+            .clip(RoundedCornerShape(6.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant)
-            .padding(horizontal = 6.dp, vertical = 2.dp)
+            .padding(horizontal = 8.dp, vertical = 3.dp)
     )
 }
 

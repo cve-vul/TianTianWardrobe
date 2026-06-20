@@ -181,18 +181,22 @@ private fun CameraPreview(
             modifier = Modifier.fillMaxSize()
         )
 
-        IconButton(
-            onClick = onBack,
+        // Back button
+        Surface(
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .padding(top = 48.dp, start = 16.dp)
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(Color.Black.copy(alpha = 0.4f))
+                .size(40.dp),
+            shape = CircleShape,
+            color = Color.Black.copy(alpha = 0.4f),
+            onClick = onBack
         ) {
-            Icon(Icons.Default.ArrowBack, contentDescription = "返回", tint = Color.White)
+            Box(contentAlignment = Alignment.Center) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "返回", tint = Color.White)
+            }
         }
 
+        // Bottom controls
         Row(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -201,54 +205,79 @@ private fun CameraPreview(
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(
-                onClick = { galleryLauncher.launch("image/*") },
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(Color.Black.copy(alpha = 0.4f))
+            // Gallery button
+            Surface(
+                modifier = Modifier.size(48.dp),
+                shape = CircleShape,
+                color = Color.Black.copy(alpha = 0.4f),
+                onClick = { galleryLauncher.launch("image/*") }
             ) {
-                Icon(Icons.Outlined.PhotoLibrary, "从相册选择", tint = Color.White, modifier = Modifier.size(24.dp))
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(Icons.Outlined.PhotoLibrary, "从相册选择", tint = Color.White, modifier = Modifier.size(24.dp))
+                }
             }
 
-            Box(
-                modifier = Modifier
-                    .size(68.dp)
-                    .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.15f))
-                    .clickable { onCapture(camController) },
-                contentAlignment = Alignment.Center
+            // Capture button
+            Surface(
+                modifier = Modifier.size(68.dp),
+                shape = CircleShape,
+                color = Color.White.copy(alpha = 0.15f),
+                onClick = { onCapture(camController) }
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(56.dp)
-                        .clip(CircleShape)
-                        .background(Color.White)
-                )
+                Box(contentAlignment = Alignment.Center) {
+                    Box(
+                        modifier = Modifier
+                            .size(56.dp)
+                            .clip(CircleShape)
+                            .background(Color.White)
+                    )
+                }
             }
+
+            // Spacer to balance the row
+            Spacer(modifier = Modifier.size(48.dp))
         }
     }
 }
 
 @Composable
 private fun PermissionRequest(showRationale: Boolean, onRequestPermission: () -> Unit) {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(
-                Icons.Outlined.CameraAlt,
-                contentDescription = null,
-                modifier = Modifier.size(56.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = if (showRationale) "需要相机权限才能拍照" else "请授予相机权限",
-                fontSize = 15.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(onClick = onRequestPermission, shape = RoundedCornerShape(10.dp)) {
-                Text("授予权限")
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+        contentAlignment = Alignment.Center
+    ) {
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.surface,
+            shadowElevation = 1.dp
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(32.dp)
+            ) {
+                Icon(
+                    Icons.Outlined.CameraAlt,
+                    contentDescription = null,
+                    modifier = Modifier.size(56.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = if (showRationale) "需要相机权限才能拍照" else "请授予相机权限",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(20.dp))
+                Button(
+                    onClick = onRequestPermission,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                    modifier = Modifier.fillMaxWidth().height(44.dp)
+                ) {
+                    Text("授予权限", fontWeight = FontWeight.Medium)
+                }
             }
         }
     }
@@ -341,54 +370,58 @@ private fun EditClothingScreen(
             .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
     ) {
-        TopAppBar(
-            title = { Text("编辑衣物", fontWeight = FontWeight.Medium) },
-            navigationIcon = {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.Default.ArrowBack, "返回")
-                }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.background
+        // Custom header
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "返回")
+            }
+            Text(
+                "编辑衣物",
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onBackground
             )
-        )
+        }
 
-        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+        Column(modifier = Modifier.padding(horizontal = 20.dp)) {
             // Photo display
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(240.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
-                contentAlignment = Alignment.Center
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(240.dp),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant
             ) {
-                AsyncImage(
-                    model = File(captureState.photoPath),
-                    contentDescription = "衣物照片",
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
+                Box(contentAlignment = Alignment.Center) {
+                    AsyncImage(
+                        model = File(captureState.photoPath),
+                        contentDescription = "衣物照片",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
 
-                if (analyzing) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(Color.Black.copy(alpha = 0.5f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(32.dp),
-                                strokeWidth = 2.dp,
-                                color = Color.White
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                "AI 正在识别衣物...",
-                                fontSize = 13.sp,
-                                color = Color.White
-                            )
+                    if (analyzing) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.Black.copy(alpha = 0.5f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(32.dp),
+                                    strokeWidth = 2.dp,
+                                    color = Color.White
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    "AI 正在识别衣物...",
+                                    fontSize = 13.sp,
+                                    color = Color.White
+                                )
+                            }
                         }
                     }
                 }
@@ -396,41 +429,46 @@ private fun EditClothingScreen(
 
             analyzeError?.let { error ->
                 Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.errorContainer
                 ) {
-                    Icon(
-                        Icons.Default.Warning,
-                        null,
-                        tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = error,
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.weight(1f)
-                    )
-                    TextButton(onClick = {
-                        analyzeError = null
-                        analyzing = true
-                        onAnalyze(captureState.photoPath) { result, error2 ->
-                            analyzing = false
-                            if (result != null) {
-                                onNameChange(result.name)
-                                onCategoryChange(result.category)
-                                onColorChange(result.color)
-                                onSeasonChange(result.season)
-                                onStyleChange(result.style)
-                                onDescriptionChange(result.description)
-                            } else {
-                                analyzeError = error2 ?: "AI 识别失败，请手动填写"
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth().padding(12.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = error,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.weight(1f)
+                        )
+                        TextButton(onClick = {
+                            analyzeError = null
+                            analyzing = true
+                            onAnalyze(captureState.photoPath) { result, error2 ->
+                                analyzing = false
+                                if (result != null) {
+                                    onNameChange(result.name)
+                                    onCategoryChange(result.category)
+                                    onColorChange(result.color)
+                                    onSeasonChange(result.season)
+                                    onStyleChange(result.style)
+                                    onDescriptionChange(result.description)
+                                } else {
+                                    analyzeError = error2 ?: "AI 识别失败，请手动填写"
+                                }
                             }
+                        }) {
+                            Text("重试", fontSize = 12.sp)
                         }
-                    }) {
-                        Text("重试", fontSize = 12.sp)
                     }
                 }
             }
@@ -444,7 +482,7 @@ private fun EditClothingScreen(
                 label = { Text("衣物名称") },
                 placeholder = { Text("如：白色衬衫") },
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(10.dp),
+                shape = RoundedCornerShape(12.dp),
                 singleLine = true
             )
 
@@ -510,20 +548,20 @@ private fun EditClothingScreen(
                 Spacer(modifier = Modifier.height(12.dp))
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(10.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
                 ) {
-                    Row(modifier = Modifier.padding(12.dp)) {
+                    Row(modifier = Modifier.padding(14.dp)) {
                         Icon(
                             Icons.Default.AutoAwesome,
-                            null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = captureState.description,
-                            fontSize = 13.sp,
+                            style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             lineHeight = 18.sp
                         )
@@ -540,17 +578,18 @@ private fun EditClothingScreen(
                 OutlinedButton(
                     onClick = onRetakePhoto,
                     modifier = Modifier.weight(1f).height(48.dp),
-                    shape = RoundedCornerShape(10.dp)
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("重拍")
+                    Text("重拍", fontWeight = FontWeight.Medium)
                 }
                 Button(
                     onClick = onSave,
                     modifier = Modifier.weight(1f).height(48.dp),
-                    shape = RoundedCornerShape(10.dp),
-                    enabled = !analyzing
+                    shape = RoundedCornerShape(12.dp),
+                    enabled = !analyzing,
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
-                    Text("保存")
+                    Text("保存", fontWeight = FontWeight.Medium)
                 }
             }
 
@@ -582,7 +621,7 @@ private fun DropdownField(
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             leadingIcon = leadingIcon,
             modifier = Modifier.fillMaxWidth().menuAnchor(),
-            shape = RoundedCornerShape(10.dp),
+            shape = RoundedCornerShape(12.dp),
             singleLine = true
         )
         ExposedDropdownMenu(

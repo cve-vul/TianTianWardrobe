@@ -60,28 +60,32 @@ fun ApiSettingsScreen(
             .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
     ) {
-        TopAppBar(
-            title = { Text("AI 推荐设置", fontWeight = FontWeight.Medium) },
-            navigationIcon = {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "返回")
-                }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.background
+        // Custom header
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "返回")
+            }
+            Text(
+                "AI 推荐设置",
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onBackground
             )
-        )
+        }
 
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(horizontal = 20.dp)) {
+            // Provider section
             Text(
                 text = "选择 AI 服务商",
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Medium,
+                style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Provider dropdown
             ExposedDropdownMenuBox(
                 expanded = showProviderMenu,
                 onExpandedChange = { showProviderMenu = it }
@@ -91,7 +95,7 @@ fun ApiSettingsScreen(
                     onValueChange = {},
                     readOnly = true,
                     modifier = Modifier.fillMaxWidth().menuAnchor(),
-                    shape = RoundedCornerShape(10.dp),
+                    shape = RoundedCornerShape(12.dp),
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showProviderMenu) },
                     singleLine = true
                 )
@@ -113,24 +117,23 @@ fun ApiSettingsScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = "接口地址：${currentProvider.endpoint}",
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
             )
 
             Spacer(modifier = Modifier.height(20.dp))
 
+            // Model section
             Text(
                 text = "选择模型",
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Medium,
+                style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Model dropdown
             ExposedDropdownMenuBox(
                 expanded = showModelMenu,
                 onExpandedChange = { showModelMenu = it }
@@ -140,7 +143,7 @@ fun ApiSettingsScreen(
                     onValueChange = {},
                     readOnly = true,
                     modifier = Modifier.fillMaxWidth().menuAnchor(),
-                    shape = RoundedCornerShape(10.dp),
+                    shape = RoundedCornerShape(12.dp),
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showModelMenu) },
                     singleLine = true
                 )
@@ -163,10 +166,10 @@ fun ApiSettingsScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
+            // API Key
             Text(
                 text = "API Key",
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Medium,
+                style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(8.dp))
@@ -176,7 +179,7 @@ fun ApiSettingsScreen(
                 onValueChange = { apiKey = it; saved = false },
                 placeholder = { Text("sk-...") },
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(10.dp),
+                shape = RoundedCornerShape(12.dp),
                 visualTransformation = if (showKey) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
                     IconButton(onClick = { showKey = !showKey }) {
@@ -199,17 +202,18 @@ fun ApiSettingsScreen(
                     saved = true
                 },
                 modifier = Modifier.fillMaxWidth().height(48.dp),
-                shape = RoundedCornerShape(10.dp)
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
-                Text("保存配置")
+                Text("保存配置", fontWeight = FontWeight.Medium)
             }
 
             if (saved) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "配置已保存",
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary,
-                    fontSize = 13.sp,
                     modifier = Modifier.align(Alignment.CenterHorizontally)
                 )
             }
@@ -225,12 +229,14 @@ fun ApiSettingsScreen(
                         saved = false
                     },
                     modifier = Modifier.fillMaxWidth().height(48.dp),
-                    shape = RoundedCornerShape(10.dp),
+                    shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Text("清除配置")
+                    Text("清除配置", fontWeight = FontWeight.Medium)
                 }
             }
+
+            Spacer(modifier = Modifier.height(32.dp))
         }
     }
 }

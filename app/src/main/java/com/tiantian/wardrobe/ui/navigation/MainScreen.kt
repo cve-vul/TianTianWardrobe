@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.AutoAwesome
@@ -15,7 +14,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -91,24 +89,21 @@ private fun BottomNavBar(
     onTabSelected: (Int) -> Unit,
     onAddClick: () -> Unit
 ) {
-    Column {
-        HorizontalDivider(
-            modifier = Modifier.fillMaxWidth(),
-            thickness = 0.5.dp,
-            color = MaterialTheme.colorScheme.outlineVariant
-        )
+    Surface(
+        shadowElevation = 8.dp,
+        color = MaterialTheme.colorScheme.surface
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .navigationBarsPadding()
-                .background(MaterialTheme.colorScheme.surface)
-                .padding(horizontal = 8.dp, vertical = 8.dp),
+                .padding(horizontal = 8.dp, vertical = 6.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
             NavItem(Icons.Outlined.Home, "首页", selectedTab == 0) { onTabSelected(0) }
             NavItem(Icons.Outlined.AutoAwesome, "推荐", selectedTab == 1) { onTabSelected(1) }
-            AddItem(onAddClick)
+            NavItem(Icons.Filled.Add, "添加", selectedTab == -1) { onAddClick() }
             NavItem(Icons.Outlined.Checkroom, "衣柜", selectedTab == 2) { onTabSelected(2) }
             NavItem(Icons.Outlined.Person, "我的", selectedTab == 3) { onTabSelected(3) }
         }
@@ -122,6 +117,12 @@ private fun NavItem(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
+    val iconColor = if (isSelected) MaterialTheme.colorScheme.primary
+    else MaterialTheme.colorScheme.onSurfaceVariant
+    val textColor = if (isSelected) MaterialTheme.colorScheme.primary
+    else MaterialTheme.colorScheme.onSurfaceVariant
+    val weight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
@@ -130,43 +131,20 @@ private fun NavItem(
                 indication = null,
                 onClick = onClick
             )
-            .padding(horizontal = 12.dp, vertical = 6.dp)
+            .padding(horizontal = 12.dp, vertical = 4.dp)
     ) {
         Icon(
             imageVector = icon,
             contentDescription = label,
-            tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+            tint = iconColor,
             modifier = Modifier.size(24.dp)
         )
-        Spacer(modifier = Modifier.height(2.dp))
+        Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = label,
             fontSize = 11.sp,
-            fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal,
-            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
-
-@Composable
-private fun AddItem(onClick: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .size(48.dp)
-            .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.primary)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = onClick
-            ),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            imageVector = Icons.Default.Add,
-            contentDescription = "拍照添加",
-            tint = MaterialTheme.colorScheme.onPrimary,
-            modifier = Modifier.size(28.dp)
+            fontWeight = weight,
+            color = textColor
         )
     }
 }

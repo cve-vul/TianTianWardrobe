@@ -1,7 +1,6 @@
 package com.tiantian.wardrobe.ui.recommend
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -39,130 +38,143 @@ fun RecommendScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
+            .padding(horizontal = 20.dp)
     ) {
-        TopAppBar(
-            title = { Text("AI穿搭推荐", fontWeight = FontWeight.Medium) },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.background
-            )
+        Text(
+            text = "AI穿搭推荐",
+            style = MaterialTheme.typography.displayLarge,
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.padding(top = 16.dp, bottom = 16.dp)
         )
 
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            if (!isLLMConfigured) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Icon(
-                            Icons.Outlined.AutoAwesome,
-                            null,
-                            modifier = Modifier.size(48.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            "请先配置AI推荐接口",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            "在设置中配置API Key和模型后即可使用AI推荐功能",
-                            fontSize = 13.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(
-                            onClick = onOpenSettings,
-                            shape = RoundedCornerShape(10.dp)
-                        ) {
-                            Text("前往设置")
-                        }
-                    }
-                }
-            } else if (dailyRecommendation != null) {
-                OutfitResultCard(dailyRecommendation, onGenerate, llmLoading)
-            } else {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Icon(
-                            Icons.Outlined.Checkroom,
-                            null,
-                            modifier = Modifier.size(48.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            "AI智能推荐今日穿搭",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            "AI将根据你的衣柜内容、天气和季节\n为你推荐一套合适的穿搭",
-                            fontSize = 13.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(
-                            onClick = onGenerate,
-                            enabled = !llmLoading,
-                            shape = RoundedCornerShape(10.dp),
-                            modifier = Modifier.fillMaxWidth().height(48.dp)
-                        ) {
-                            if (llmLoading) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(20.dp),
-                                    strokeWidth = 2.dp,
-                                    color = MaterialTheme.colorScheme.onPrimary
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                            }
-                            Text(
-                                if (llmLoading) "正在生成推荐..." else "AI推荐今日穿搭",
-                                fontSize = 15.sp
-                            )
-                        }
-                    }
-                }
+        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            when {
+                !isLLMConfigured -> UnconfiguredCard(onOpenSettings)
+                dailyRecommendation != null -> OutfitResultCard(dailyRecommendation, onGenerate, llmLoading)
+                else -> GenerateCard(onGenerate, llmLoading)
             }
 
             if (llmError != null) {
-                Card(
+                Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+                    shape = RoundedCornerShape(16.dp),
+                    color = MaterialTheme.colorScheme.errorContainer
                 ) {
                     Text(
                         llmError,
                         modifier = Modifier.padding(16.dp),
-                        fontSize = 13.sp,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onErrorContainer,
                         textAlign = TextAlign.Center
                     )
                 }
             }
 
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+    }
+}
+
+@Composable
+private fun UnconfiguredCard(onOpenSettings: () -> Unit) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 1.dp
+    ) {
+        Column(
+            modifier = Modifier.padding(28.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                Icons.Outlined.AutoAwesome,
+                contentDescription = null,
+                modifier = Modifier.size(56.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                "请先配置AI推荐接口",
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface
+            )
             Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                "在设置中配置API Key和模型后即可使用AI推荐功能",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(20.dp))
+            Button(
+                onClick = onOpenSettings,
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                ),
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+            ) {
+                Text("前往设置", fontWeight = FontWeight.Medium)
+            }
+        }
+    }
+}
+
+@Composable
+private fun GenerateCard(onGenerate: () -> Unit, loading: Boolean) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 1.dp
+    ) {
+        Column(
+            modifier = Modifier.padding(28.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                Icons.Outlined.Checkroom,
+                contentDescription = null,
+                modifier = Modifier.size(56.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                "AI智能推荐今日穿搭",
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                "AI将根据你的衣柜内容、天气和季节\n为你推荐一套合适的穿搭",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(20.dp))
+            Button(
+                onClick = onGenerate,
+                enabled = !loading,
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                ),
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+            ) {
+                if (loading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
+                Text(
+                    if (loading) "正在生成推荐..." else "AI推荐今日穿搭",
+                    fontWeight = FontWeight.Medium
+                )
+            }
         }
     }
 }
@@ -173,12 +185,13 @@ private fun OutfitResultCard(
     onRegenerate: () -> Unit,
     loading: Boolean
 ) {
-    Card(
+    Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 1.dp
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(20.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -186,82 +199,89 @@ private fun OutfitResultCard(
             ) {
                 Text(
                     "今日推荐",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
+                    style = MaterialTheme.typography.headlineLarge,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 IconButton(onClick = onRegenerate, enabled = !loading) {
                     if (loading) {
                         CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
                     } else {
-                        Icon(Icons.Outlined.Refresh, "重新生成", tint = MaterialTheme.colorScheme.primary)
+                        Icon(
+                            Icons.Outlined.Refresh,
+                            contentDescription = "重新生成",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
                     }
                 }
             }
 
             if (recommendation.reason.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(10.dp))
                 Text(
                     recommendation.reason,
-                    fontSize = 13.sp,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    lineHeight = 18.sp
+                    lineHeight = 20.sp
                 )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
             val itemSlots = listOfNotNull(
-                if (recommendation.topId > 0) ItemSlotData(recommendation.topName, recommendation.topImagePath) else null,
-                if (recommendation.bottomId > 0) ItemSlotData(recommendation.bottomName, recommendation.bottomImagePath) else null,
-                if (recommendation.outerwearId > 0) ItemSlotData(recommendation.outerwearName, recommendation.outerwearImagePath) else null,
-                if (recommendation.shoesId > 0) ItemSlotData(recommendation.shoesName, recommendation.shoesImagePath) else null,
-                if (recommendation.dressId > 0 && recommendation.topId != recommendation.dressId) ItemSlotData(recommendation.dressName, recommendation.dressImagePath) else null
+                if (recommendation.topId > 0) ItemSlot(recommendation.topName, recommendation.topImagePath) else null,
+                if (recommendation.bottomId > 0) ItemSlot(recommendation.bottomName, recommendation.bottomImagePath) else null,
+                if (recommendation.outerwearId > 0) ItemSlot(recommendation.outerwearName, recommendation.outerwearImagePath) else null,
+                if (recommendation.shoesId > 0) ItemSlot(recommendation.shoesName, recommendation.shoesImagePath) else null,
+                if (recommendation.dressId > 0 && recommendation.topId != recommendation.dressId) ItemSlot(recommendation.dressName, recommendation.dressImagePath) else null
             )
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 itemSlots.forEach { slot ->
-                    ItemCard(slot, Modifier.weight(1f))
+                    OutfitItemCard(slot, Modifier.weight(1f))
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             OutlinedButton(
                 onClick = onRegenerate,
                 enabled = !loading,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(10.dp)
+                modifier = Modifier.fillMaxWidth().height(44.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = MaterialTheme.colorScheme.primary
+                )
             ) {
-                Icon(Icons.Outlined.Refresh, null, modifier = Modifier.size(18.dp))
+                Icon(Icons.Outlined.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("重新生成推荐")
+                Text("重新生成推荐", fontWeight = FontWeight.Medium)
             }
         }
     }
 }
 
-private data class ItemSlotData(
+private data class ItemSlot(
     val name: String,
     val imagePath: String
 )
 
 @Composable
-private fun ItemCard(slot: ItemSlotData, modifier: Modifier = Modifier) {
+private fun OutfitItemCard(slot: ItemSlot, modifier: Modifier = Modifier) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
             .padding(8.dp)
     ) {
         Box(
             modifier = Modifier
                 .aspectRatio(0.75f)
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(6.dp))
+                .clip(RoundedCornerShape(8.dp))
                 .background(MaterialTheme.colorScheme.surfaceVariant),
             contentAlignment = Alignment.Center
         ) {
@@ -275,17 +295,17 @@ private fun ItemCard(slot: ItemSlotData, modifier: Modifier = Modifier) {
             } else {
                 Icon(
                     Icons.Outlined.Checkroom,
-                    null,
+                    contentDescription = null,
                     modifier = Modifier.size(32.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
                 )
             }
         }
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = slot.name.take(6),
-            fontSize = 10.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurface,
             maxLines = 1,
             textAlign = TextAlign.Center
         )

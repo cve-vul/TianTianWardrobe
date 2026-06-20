@@ -78,29 +78,33 @@ fun VisionSettingsScreen(
             .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
     ) {
-        TopAppBar(
-            title = { Text("视觉模型设置", fontWeight = FontWeight.Medium) },
-            navigationIcon = {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "返回")
-                }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.background
+        // Custom header
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "返回")
+            }
+            Text(
+                "视觉模型设置",
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onBackground
             )
-        )
+        }
 
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(horizontal = 20.dp)) {
             // Info card
-            Card(
+            Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(10.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                )
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                shadowElevation = 0.dp
             ) {
                 Row(
-                    modifier = Modifier.padding(14.dp),
+                    modifier = Modifier.padding(16.dp),
                     verticalAlignment = Alignment.Top
                 ) {
                     Icon(
@@ -109,17 +113,17 @@ fun VisionSettingsScreen(
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(20.dp)
                     )
-                    Spacer(modifier = Modifier.width(10.dp))
+                    Spacer(modifier = Modifier.width(12.dp))
                     Column {
                         Text(
                             "视觉识别功能",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             "配置后，拍照添加衣物时将自动调用视觉模型识别衣物的类别、颜色、风格等信息，无需手动填写。",
-                            fontSize = 12.sp,
+                            style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             lineHeight = 18.sp
                         )
@@ -131,13 +135,11 @@ fun VisionSettingsScreen(
 
             Text(
                 text = "选择服务商",
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Medium,
+                style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Provider dropdown
             ExposedDropdownMenuBox(
                 expanded = showProviderMenu,
                 onExpandedChange = { showProviderMenu = it }
@@ -147,7 +149,7 @@ fun VisionSettingsScreen(
                     onValueChange = {},
                     readOnly = true,
                     modifier = Modifier.fillMaxWidth().menuAnchor(),
-                    shape = RoundedCornerShape(10.dp),
+                    shape = RoundedCornerShape(12.dp),
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showProviderMenu) },
                     singleLine = true
                 )
@@ -169,24 +171,22 @@ fun VisionSettingsScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = "接口地址：${currentProvider.endpoint}",
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
             )
 
             Spacer(modifier = Modifier.height(20.dp))
 
             Text(
                 text = "选择视觉模型",
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Medium,
+                style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Model dropdown
             ExposedDropdownMenuBox(
                 expanded = showModelMenu,
                 onExpandedChange = { showModelMenu = it }
@@ -196,7 +196,7 @@ fun VisionSettingsScreen(
                     onValueChange = {},
                     readOnly = true,
                     modifier = Modifier.fillMaxWidth().menuAnchor(),
-                    shape = RoundedCornerShape(10.dp),
+                    shape = RoundedCornerShape(12.dp),
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showModelMenu) },
                     singleLine = true
                 )
@@ -221,8 +221,7 @@ fun VisionSettingsScreen(
 
             Text(
                 text = "API Key",
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Medium,
+                style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(8.dp))
@@ -232,7 +231,7 @@ fun VisionSettingsScreen(
                 onValueChange = { apiKey = it; saved = false },
                 placeholder = { Text("输入 API Key") },
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(10.dp),
+                shape = RoundedCornerShape(12.dp),
                 visualTransformation = if (showKey) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
                     IconButton(onClick = { showKey = !showKey }) {
@@ -255,17 +254,18 @@ fun VisionSettingsScreen(
                     saved = true
                 },
                 modifier = Modifier.fillMaxWidth().height(48.dp),
-                shape = RoundedCornerShape(10.dp)
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
-                Text("保存配置")
+                Text("保存配置", fontWeight = FontWeight.Medium)
             }
 
             if (saved) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "配置已保存",
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary,
-                    fontSize = 13.sp,
                     modifier = Modifier.align(Alignment.CenterHorizontally)
                 )
             }
@@ -281,12 +281,14 @@ fun VisionSettingsScreen(
                         saved = false
                     },
                     modifier = Modifier.fillMaxWidth().height(48.dp),
-                    shape = RoundedCornerShape(10.dp),
+                    shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Text("清除配置")
+                    Text("清除配置", fontWeight = FontWeight.Medium)
                 }
             }
+
+            Spacer(modifier = Modifier.height(32.dp))
         }
     }
 }

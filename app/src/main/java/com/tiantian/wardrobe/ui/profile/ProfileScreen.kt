@@ -9,7 +9,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.CameraAlt
 import androidx.compose.material.icons.outlined.Info
@@ -120,129 +119,137 @@ fun ProfileScreen(
     ) {
         Text(
             text = "我的",
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 16.dp)
+            style = MaterialTheme.typography.displayLarge,
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.padding(start = 20.dp, top = 16.dp, bottom = 16.dp)
         )
 
         // User card
-        Row(
+        Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.surface)
-                .padding(20.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(horizontal = 20.dp),
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.surface,
+            shadowElevation = 1.dp
         ) {
-            Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
-                contentAlignment = Alignment.Center
+            Row(
+                modifier = Modifier.padding(20.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    modifier = Modifier.size(56.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            Icons.Default.Person,
+                            contentDescription = null,
+                            modifier = Modifier.size(28.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        "衣橱管家用户",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        "已收录 $itemCount 件衣物",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 Icon(
-                    Icons.Default.Person,
-                    null,
-                    modifier = Modifier.size(28.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            Spacer(modifier = Modifier.width(16.dp))
-            Column {
-                Text("衣橱管家用户", fontSize = 17.sp, fontWeight = FontWeight.Medium)
-                Text(
-                    "已收录 $itemCount 件衣物",
-                    fontSize = 13.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    Icons.Default.ChevronRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+                    modifier = Modifier.size(20.dp)
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(28.dp))
 
         // Settings section
-        Text(
-            text = "功能设置",
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(start = 16.dp, bottom = 8.dp)
-        )
+        SectionHeader("功能设置")
 
-        Column(
+        Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.surface)
+                .padding(horizontal = 20.dp),
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.surface,
+            shadowElevation = 1.dp
         ) {
-            SettingsRow(
-                icon = Icons.Outlined.AutoAwesome,
-                title = "AI 推荐设置",
-                subtitle = if (isLLMConfigured) "已配置" else "未配置",
-                showBadge = isLLMConfigured,
-                onClick = onOpenSettings
-            )
-            DividerRow()
-            SettingsRow(
-                icon = Icons.Outlined.CameraAlt,
-                title = "视觉模型设置",
-                subtitle = if (isVisionConfigured) "已配置" else "未配置",
-                showBadge = isVisionConfigured,
-                onClick = onOpenVisionSettings
-            )
-            DividerRow()
-            SettingsRow(
-                icon = Icons.Outlined.Storage,
-                title = "数据存储",
-                subtitle = "本地数据库",
-                onClick = { showStorageDialog = true }
-            )
-            DividerRow()
-            SettingsRow(
-                icon = Icons.Outlined.Info,
-                title = "应用介绍",
-                subtitle = "天天衣橱 - 智能穿搭助手",
-                onClick = { showAboutDialog = true }
-            )
+            Column {
+                SettingsRow(
+                    icon = Icons.Outlined.AutoAwesome,
+                    title = "AI 推荐设置",
+                    subtitle = if (isLLMConfigured) "已配置" else "未配置",
+                    showBadge = isLLMConfigured,
+                    onClick = onOpenSettings
+                )
+                DividerRow()
+                SettingsRow(
+                    icon = Icons.Outlined.CameraAlt,
+                    title = "视觉模型设置",
+                    subtitle = if (isVisionConfigured) "已配置" else "未配置",
+                    showBadge = isVisionConfigured,
+                    onClick = onOpenVisionSettings
+                )
+                DividerRow()
+                SettingsRow(
+                    icon = Icons.Outlined.Storage,
+                    title = "数据存储",
+                    subtitle = "本地数据库",
+                    onClick = { showStorageDialog = true }
+                )
+                DividerRow()
+                SettingsRow(
+                    icon = Icons.Outlined.Info,
+                    title = "应用介绍",
+                    subtitle = "天天衣橱 - 智能穿搭助手",
+                    onClick = { showAboutDialog = true }
+                )
+            }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(28.dp))
 
-        // Reset data
-        Text(
-            text = "数据管理",
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(start = 16.dp, bottom = 8.dp)
-        )
-        Column(
+        // Data management section
+        SectionHeader("数据管理")
+
+        Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.surface)
+                .padding(horizontal = 20.dp),
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.surface,
+            shadowElevation = 1.dp
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { showResetDialog = true }
-                    .padding(horizontal = 16.dp, vertical = 16.dp),
+                    .padding(horizontal = 18.dp, vertical = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
                     Icons.Default.DeleteForever,
-                    null,
+                    contentDescription = null,
                     tint = MaterialTheme.colorScheme.error,
                     modifier = Modifier.size(22.dp)
                 )
                 Spacer(modifier = Modifier.width(14.dp))
                 Text(
                     "重置所有数据",
-                    fontSize = 15.sp,
+                    style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.error
                 )
             }
@@ -251,12 +258,22 @@ fun ProfileScreen(
         Spacer(modifier = Modifier.height(48.dp))
         Text(
             "天天衣橱 v1.0.6",
-            fontSize = 12.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
             modifier = Modifier.fillMaxWidth().padding(16.dp),
             textAlign = TextAlign.Center
         )
     }
+}
+
+@Composable
+private fun SectionHeader(title: String) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(start = 20.dp, bottom = 10.dp)
+    )
 }
 
 @Composable
@@ -271,22 +288,34 @@ private fun SettingsRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() }
-            .padding(horizontal = 16.dp, vertical = 14.dp),
+            .padding(horizontal = 18.dp, vertical = 15.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
-            icon,
-            null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(22.dp)
-        )
+        Surface(
+            shape = RoundedCornerShape(10.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            modifier = Modifier.size(36.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
         Spacer(modifier = Modifier.width(14.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(title, fontSize = 15.sp)
+            Text(
+                title,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface
+            )
             Text(
                 subtitle,
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
         if (showBadge) {
@@ -296,12 +325,12 @@ private fun SettingsRow(
                     .clip(CircleShape)
                     .background(Success)
             )
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(10.dp))
         }
         Icon(
             Icons.Default.ChevronRight,
-            null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f),
             modifier = Modifier.size(20.dp)
         )
     }
@@ -310,7 +339,7 @@ private fun SettingsRow(
 @Composable
 private fun DividerRow() {
     HorizontalDivider(
-        modifier = Modifier.padding(start = 52.dp),
+        modifier = Modifier.padding(start = 68.dp),
         thickness = 0.5.dp,
         color = MaterialTheme.colorScheme.outlineVariant
     )
