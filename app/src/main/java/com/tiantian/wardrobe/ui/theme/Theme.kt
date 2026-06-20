@@ -9,6 +9,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tiantian.wardrobe.R
@@ -34,10 +35,10 @@ private val AppTypography = Typography(
 )
 
 private val AppShapes = Shapes(
-    small  = 8.dp,
-    medium = 12.dp,
-    large  = 16.dp,
-    extraLarge = 20.dp,
+    small  = RoundedCornerShape(8.dp),
+    medium = RoundedCornerShape(12.dp),
+    large  = RoundedCornerShape(16.dp),
+    extraLarge = RoundedCornerShape(20.dp),
 )
 
 private val LightColorScheme = lightColorScheme(
